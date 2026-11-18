@@ -13,6 +13,7 @@ import {
   Sun,
   Moon,
   Layers,
+  ArrowLeftRight,
 } from "lucide-react";
 import {
   printThermalHtml,
@@ -70,7 +71,10 @@ export default function DailyOrdersAndReportsModal({
   activeShiftCode = "SHIFT_1",
 }: DailyOrdersAndReportsModalProps) {
   const [activeTab, setActiveTab] = useState<"ORDERS" | "REPORTS">(defaultTab);
-  const [selectedDate, setSelectedDate] = useState<string>(getTodayYMD());
+  const [startDate, setStartDate] = useState<string>(getTodayYMD());
+  const [endDate, setEndDate] = useState<string>(getTodayYMD());
+  const [isRangeMode, setIsRangeMode] = useState<boolean>(false);
+
   const [shiftFilter, setShiftFilter] = useState<"ALL" | "SHIFT_1" | "SHIFT_2">("ALL");
   const [orderTypeTab, setOrderTypeTab] = useState<"ALL" | "DINE_IN" | "TAKEAWAY" | "DELIVERY">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,9 +90,10 @@ export default function DailyOrdersAndReportsModal({
   const fetchSummary = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/reports/daily-summary?date=${encodeURIComponent(selectedDate)}&shiftCode=${shiftFilter}`
-      );
+      const url = isRangeMode
+        ? `/api/reports/daily-summary?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&shiftCode=${shiftFilter}`
+        : `/api/reports/daily-summary?date=${encodeURIComponent(startDate)}&shiftCode=${shiftFilter}`;
+      const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
         setReport(data.report);
@@ -100,7 +105,7 @@ export default function DailyOrdersAndReportsModal({
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, shiftFilter]);
+  }, [startDate, endDate, isRangeMode, shiftFilter]);
 
   useEffect(() => {
     if (!open) return;
@@ -111,6 +116,37 @@ export default function DailyOrdersAndReportsModal({
     if (!open) return;
     fetchSummary();
   }, [open, fetchSummary]);
+
+  const setQuickPreset = (type: "TODAY" | "YESTERDAY" | "LAST_7" | "THIS_MONTH") => {
+    const today = new Date();
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+    if (type === "TODAY") {
+      const t = fmt(today);
+      setStartDate(t);
+      setEndDate(t);
+      setIsRangeMode(false);
+    } else if (type === "YESTERDAY") {
+      const y = new Date();
+      y.setDate(y.getDate() - 1);
+      const yStr = fmt(y);
+      setStartDate(yStr);
+      setEndDate(yStr);
+      setIsRangeMode(false);
+    } else if (type === "LAST_7") {
+      const past = new Date();
+      past.setDate(past.getDate() - 6);
+      setStartDate(fmt(past));
+      setEndDate(fmt(today));
+      setIsRangeMode(true);
+    } else if (type === "THIS_MONTH") {
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      setStartDate(fmt(firstDay));
+      setEndDate(fmt(today));
+      setIsRangeMode(true);
+    }
+  };
 
   if (!open) return null;
 
@@ -150,100 +186,197 @@ export default function DailyOrdersAndReportsModal({
   return (
     <div
       dir="rtl"
-      className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 md:p-6"
+      className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6"
     >
-      <div className="w-full max-w-6xl max-h-[92vh] rounded-3xl bg-[#14110f] border border-amber-500/25 text-amber-50 shadow-2xl flex flex-col overflow-hidden">
+      <div className="w-full max-w-6xl max-h-[94vh] rounded-3xl bg-white dark:bg-[#14110f] border border-slate-200 dark:border-amber-500/25 text-slate-900 dark:text-amber-50 shadow-2xl flex flex-col overflow-hidden transition-colors">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-white/10 bg-gradient-to-l from-amber-600/15 via-transparent to-transparent flex flex-wrap items-center justify-between gap-3">
+        <div className="px-5 py-3.5 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-gradient-to-l dark:from-amber-600/15 dark:via-transparent dark:to-transparent flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg md:text-xl font-black text-amber-50 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-amber-400" />
+            <h2 className="text-base md:text-lg font-black text-slate-900 dark:text-amber-50 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               أوردرات اليوم وتقارير الورديات — Soulmate
             </h2>
-            <p className="text-xs text-amber-200/60 mt-0.5">
-              تقرير مطابق 100% للطباعة الحرارية 80mm • كل وردية منفصلة للعرض والطباعة فقط بدون تعديل
+            <p className="text-xs text-slate-500 dark:text-amber-200/60 mt-0.5">
+              تقرير مطابق 100% للطباعة الحرارية 80mm • يدعم استخراج التقارير ليوم محدد أو فترة مخصصة بين تاريخين
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Main Tabs */}
-            <div className="flex bg-black/40 p-1 rounded-xl border border-white/10">
+            {/* Main Tabs (Orders vs Reports) */}
+            <div className="flex bg-slate-200/80 dark:bg-black/40 p-1 rounded-xl border border-slate-300 dark:border-white/10">
               <button
                 type="button"
                 onClick={() => setActiveTab("ORDERS")}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition ${
                   activeTab === "ORDERS"
-                    ? "bg-amber-500 text-black"
-                    : "text-amber-100/70 hover:text-white"
+                    ? "bg-amber-500 text-black shadow-sm"
+                    : "text-slate-700 dark:text-amber-100/70 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <Receipt className="w-3.5 h-3.5" />
-                أوردرات اليوم ({orders.length})
+                أوردرات الفترة ({orders.length})
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("REPORTS")}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition ${
                   activeTab === "REPORTS"
-                    ? "bg-amber-500 text-black"
-                    : "text-amber-100/70 hover:text-white"
+                    ? "bg-amber-500 text-black shadow-sm"
+                    : "text-slate-700 dark:text-amber-100/70 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <Printer className="w-3.5 h-3.5" />
-                تقرير مبيعات اليوم / الوردية
+                تقرير المبيعات والورديات
               </button>
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-amber-100 transition"
+              className="p-2 rounded-xl bg-slate-200/80 hover:bg-slate-300 dark:bg-white/5 dark:hover:bg-white/15 text-slate-700 dark:text-amber-100 transition"
+              title="إغلاق"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Filter Bar: Date + Shift Selector */}
-        <div className="px-5 py-3 border-b border-white/10 bg-black/30 flex flex-wrap items-center justify-between gap-3">
+        {/* Filter Bar: Single Day vs Date Range + Quick Presets + Shifts */}
+        <div className="px-5 py-3 border-b border-slate-200 dark:border-white/10 bg-slate-100/90 dark:bg-black/35 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
-              <Calendar className="w-4 h-4 text-amber-400" />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-transparent text-xs font-bold text-amber-50 focus:outline-none"
-              />
+            {/* Mode Toggle (Single Day vs Range) */}
+            <div className="flex bg-white dark:bg-white/5 p-0.5 rounded-xl border border-slate-300 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRangeMode(false);
+                  setEndDate(startDate);
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition ${
+                  !isRangeMode
+                    ? "bg-amber-500 text-black shadow-sm"
+                    : "text-slate-600 dark:text-amber-100/70 hover:text-slate-900"
+                }`}
+              >
+                يوم واحد 📅
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsRangeMode(true)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition ${
+                  isRangeMode
+                    ? "bg-amber-500 text-black shadow-sm"
+                    : "text-slate-600 dark:text-amber-100/70 hover:text-slate-900"
+                }`}
+              >
+                بين تاريخين 🗓️
+              </button>
             </div>
 
-            {/* Shift Tabs (Read-Only cross-shift viewing!) */}
-            <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10">
+            {/* Date Pickers */}
+            {!isRangeMode ? (
+              <div className="flex items-center gap-2 bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-1.5 shadow-sm">
+                <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-[11px] font-bold text-slate-500 dark:text-amber-200/60">التاريخ:</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setEndDate(e.target.value);
+                  }}
+                  className="bg-transparent text-xs font-black text-slate-900 dark:text-amber-50 focus:outline-none"
+                />
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-1.5 bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl p-1 shadow-sm">
+                <div className="flex items-center gap-1.5 px-2 py-0.5">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-amber-200/60">من:</span>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="bg-transparent text-xs font-black text-slate-900 dark:text-amber-50 focus:outline-none"
+                  />
+                </div>
+                <ArrowLeftRight className="w-3.5 h-3.5 text-slate-400 dark:text-white/30" />
+                <div className="flex items-center gap-1.5 px-2 py-0.5">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-amber-200/60">إلى:</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="bg-transparent text-xs font-black text-slate-900 dark:text-amber-50 focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Quick Presets */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setQuickPreset("TODAY")}
+                className="px-2.5 py-1 rounded-lg bg-white dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-300 dark:border-white/10 text-[11px] font-bold text-slate-700 dark:text-amber-200 transition"
+              >
+                اليوم
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickPreset("YESTERDAY")}
+                className="px-2.5 py-1 rounded-lg bg-white dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-300 dark:border-white/10 text-[11px] font-bold text-slate-700 dark:text-amber-200 transition"
+              >
+                أمس
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickPreset("LAST_7")}
+                className="px-2.5 py-1 rounded-lg bg-white dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-300 dark:border-white/10 text-[11px] font-bold text-slate-700 dark:text-amber-200 transition"
+              >
+                آخر 7 أيام
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickPreset("THIS_MONTH")}
+                className="px-2.5 py-1 rounded-lg bg-white dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-300 dark:border-white/10 text-[11px] font-bold text-slate-700 dark:text-amber-200 transition"
+              >
+                هذا الشهر
+              </button>
+            </div>
+
+            {/* Shift Tabs */}
+            <div className="flex items-center gap-1 bg-white dark:bg-white/5 p-1 rounded-xl border border-slate-300 dark:border-white/10 shadow-sm">
               <button
                 type="button"
                 onClick={() => setShiftFilter("ALL")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition ${
-                  shiftFilter === "ALL" ? "bg-amber-500/90 text-black" : "text-amber-100/70 hover:bg-white/5"
+                className={`px-3 py-1 rounded-lg text-xs font-black flex items-center gap-1 transition ${
+                  shiftFilter === "ALL"
+                    ? "bg-amber-500 text-black shadow-sm"
+                    : "text-slate-600 dark:text-amber-100/70 hover:bg-slate-200 dark:hover:bg-white/5"
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                إجمالي اليوم
+                {isRangeMode ? "كل الورديات" : "إجمالي اليوم"}
               </button>
               <button
                 type="button"
                 onClick={() => setShiftFilter("SHIFT_1")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition ${
-                  shiftFilter === "SHIFT_1" ? "bg-amber-400 text-black" : "text-amber-100/70 hover:bg-white/5"
+                className={`px-3 py-1 rounded-lg text-xs font-black flex items-center gap-1 transition ${
+                  shiftFilter === "SHIFT_1"
+                    ? "bg-amber-400 text-black shadow-sm"
+                    : "text-slate-600 dark:text-amber-100/70 hover:bg-slate-200 dark:hover:bg-white/5"
                 }`}
               >
-                <Sun className="w-3.5 h-3.5" />
+                <Sun className="w-3.5 h-3.5 text-amber-700 dark:text-black" />
                 {shiftNames.SHIFT_1}
               </button>
               <button
                 type="button"
                 onClick={() => setShiftFilter("SHIFT_2")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition ${
-                  shiftFilter === "SHIFT_2" ? "bg-indigo-400 text-black" : "text-amber-100/70 hover:bg-white/5"
+                className={`px-3 py-1 rounded-lg text-xs font-black flex items-center gap-1 transition ${
+                  shiftFilter === "SHIFT_2"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-600 dark:text-amber-100/70 hover:bg-slate-200 dark:hover:bg-white/5"
                 }`}
               >
                 <Moon className="w-3.5 h-3.5" />
@@ -252,9 +385,9 @@ export default function DailyOrdersAndReportsModal({
             </div>
 
             {isViewingOtherShift && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-400/30">
+              <span className="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-400/40">
                 <Lock className="w-3 h-3" />
-                وضع القراءة والطباعة فقط (وردية أخرى)
+                وضع القراءة والطباعة فقط
               </span>
             )}
           </div>
@@ -263,18 +396,18 @@ export default function DailyOrdersAndReportsModal({
             type="button"
             onClick={fetchSummary}
             disabled={loading}
-            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold flex items-center gap-1.5 transition"
+            className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-300 dark:border-white/10 text-xs font-black text-slate-800 dark:text-amber-100 flex items-center gap-1.5 transition shadow-sm"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-amber-600 dark:text-amber-400" : ""}`} />
             تحديث
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5">
           {activeTab === "ORDERS" ? (
             <div className="space-y-4">
-              {/* Sub-tabs matching Photo 6 (تيك أواي | صالة | استلام الفرع) + search */}
+              {/* Sub-tabs (All | Dine-In | Takeaway | Delivery) + Search */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   {[
@@ -289,8 +422,8 @@ export default function DailyOrdersAndReportsModal({
                       onClick={() => setOrderTypeTab(t.key as any)}
                       className={`px-4 py-1.5 rounded-xl text-xs font-black border transition ${
                         orderTypeTab === t.key
-                          ? "bg-amber-500/20 border-amber-400 text-amber-200"
-                          : "bg-white/5 border-white/10 text-white/60 hover:text-white"
+                          ? "bg-amber-500/20 border-amber-500 text-amber-900 dark:text-amber-200 shadow-sm"
+                          : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white"
                       }`}
                     >
                       {t.label}
@@ -299,21 +432,21 @@ export default function DailyOrdersAndReportsModal({
                 </div>
 
                 <div className="relative min-w-[220px]">
-                  <Search className="w-4 h-4 text-amber-300/60 absolute right-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-slate-400 dark:text-amber-300/60 absolute right-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="ابحث برقم البون أو الطاولة..."
-                    className="w-full pr-9 pl-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-amber-50 placeholder:text-white/30 focus:outline-none focus:border-amber-400"
+                    className="w-full pr-9 pl-3 py-2 rounded-xl bg-white dark:bg-black/40 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-amber-50 placeholder:text-slate-400 dark:placeholder:text-white/30 focus:outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
 
-              {/* Orders Table (Photo 6 columns) */}
-              <div className="rounded-2xl border border-white/10 overflow-x-auto bg-black/25">
+              {/* Orders Table */}
+              <div className="rounded-2xl border border-slate-200 dark:border-white/10 overflow-x-auto bg-white dark:bg-black/25 shadow-sm">
                 <table className="w-full text-right text-xs">
-                  <thead className="bg-white/5 text-amber-200/80 border-b border-white/10">
+                  <thead className="bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-amber-200/80 border-b border-slate-200 dark:border-white/10">
                     <tr>
                       <th className="py-3 px-3 font-black">رقم البون</th>
                       <th className="py-3 px-3 font-black">التاريخ</th>
@@ -328,11 +461,11 @@ export default function DailyOrdersAndReportsModal({
                       <th className="py-3 px-3 font-black text-center">إعادة طباعة</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                     {filteredOrders.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="py-10 text-center text-white/40 font-bold">
-                          لا توجد فواتير مسجلة في هذا التاريخ / الوردية
+                        <td colSpan={11} className="py-12 text-center text-slate-400 dark:text-white/40 font-bold">
+                          لا توجد فواتير مسجلة في هذه الفترة / الوردية
                         </td>
                       </tr>
                     ) : (
@@ -346,11 +479,11 @@ export default function DailyOrdersAndReportsModal({
                             ? "منتهي"
                             : "مفتوحة";
                         return (
-                          <tr key={o.id} className="hover:bg-white/5 transition">
-                            <td className="py-2.5 px-3 font-black text-amber-300 font-mono">
+                          <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition text-slate-800 dark:text-white/90">
+                            <td className="py-2.5 px-3 font-black text-amber-700 dark:text-amber-300 font-mono">
                               #{o.dailyTicketNo || o.orderNumber}
                             </td>
-                            <td className="py-2.5 px-3 font-mono text-white/75" dir="ltr">
+                            <td className="py-2.5 px-3 font-mono text-slate-600 dark:text-white/75" dir="ltr">
                               {dateFormatted}
                             </td>
                             <td className="py-2.5 px-3 font-bold">
@@ -362,26 +495,26 @@ export default function DailyOrdersAndReportsModal({
                             <td className="py-2.5 px-3 font-black font-mono">
                               {Number(o.finalAmount || 0).toFixed(2)}
                             </td>
-                            <td className="py-2.5 px-3 font-bold text-emerald-300 font-mono">
+                            <td className="py-2.5 px-3 font-bold text-emerald-600 dark:text-emerald-300 font-mono">
                               {Number(o.paidAmount || 0).toFixed(2)}
                             </td>
-                            <td className="py-2.5 px-3 font-bold text-amber-300 font-mono">
+                            <td className="py-2.5 px-3 font-bold text-amber-700 dark:text-amber-300 font-mono">
                               {Number(o.remainingAmount || 0).toFixed(2)}
                             </td>
                             <td className="py-2.5 px-3">
                               <span
-                                className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                                className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
                                   o.status === "CANCELLED"
-                                    ? "bg-rose-500/20 text-rose-300"
+                                    ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
                                     : o.paymentStatus === "PAID"
-                                    ? "bg-emerald-500/20 text-emerald-300"
-                                    : "bg-amber-500/20 text-amber-300"
+                                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                                    : "bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30"
                                 }`}
                               >
                                 {statusAr}
                               </span>
                             </td>
-                            <td className="py-2.5 px-3 text-white/80 font-bold">
+                            <td className="py-2.5 px-3 text-slate-600 dark:text-white/80 font-bold">
                               {o.shiftCode === "SHIFT_2" ? "وردية 2" : "وردية 1"}
                             </td>
                             <td className="py-2.5 px-3 font-bold">
@@ -393,7 +526,7 @@ export default function DailyOrdersAndReportsModal({
                                 onClick={() =>
                                   printThermalHtml(generateSoulmateReceiptHtml(o, settings))
                                 }
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500 text-amber-200 hover:text-black font-bold transition"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-800 dark:text-amber-200 hover:text-black font-black transition border border-amber-500/30"
                                 title="طباعة الريسيت الحراري 80mm"
                               >
                                 <Printer className="w-3.5 h-3.5" />
@@ -409,16 +542,16 @@ export default function DailyOrdersAndReportsModal({
               </div>
             </div>
           ) : (
-            /* REPORTS TAB (Exact Photos 9 & 10 Preview + Thermal Print Buttons) */
-            <div className="space-y-5">
+            /* REPORTS TAB (Full Financial Summary + Category-Grouped Items) */
+            <div className="space-y-4">
               {/* Action Print Bar */}
               <div className="flex flex-wrap items-center justify-between gap-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4">
                 <div>
-                  <h3 className="text-sm font-black text-amber-200">
-                    {report?.shiftLabel || "تقرير مبيعات اليوم"} — {report?.dateStr}
+                  <h3 className="text-sm font-black text-amber-900 dark:text-amber-200">
+                    {report?.shiftLabel || "تقرير مبيعات الفترة"} — {report?.dateStr}
                   </h3>
-                  <p className="text-xs text-amber-100/70">
-                    تقرير مطابق 100% للريسيت الحراري 80mm (الأصناف بالأقسام + الملخص المالي لليوم)
+                  <p className="text-xs text-slate-600 dark:text-amber-100/70 mt-0.5">
+                    تقرير مطابق 100% للريسيت الحراري 80mm (الأصناف بالأقسام + الملخص المالي الكامل)
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -426,19 +559,19 @@ export default function DailyOrdersAndReportsModal({
                     type="button"
                     onClick={handlePrintItemsReport}
                     disabled={!report}
-                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-amber-50 text-xs font-black flex items-center gap-2 transition"
+                    className="px-4 py-2 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 border border-slate-300 dark:border-transparent text-slate-800 dark:text-amber-50 text-xs font-black flex items-center gap-2 transition shadow-sm"
                   >
-                    <Printer className="w-4 h-4 text-amber-300" />
+                    <Printer className="w-4 h-4 text-amber-600 dark:text-amber-300" />
                     طباعة تقرير الأصناف بالأقسام
                   </button>
                   <button
                     type="button"
                     onClick={handlePrintFinancialReport}
                     disabled={!report}
-                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-amber-50 text-xs font-black flex items-center gap-2 transition"
+                    className="px-4 py-2 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 border border-slate-300 dark:border-transparent text-slate-800 dark:text-amber-50 text-xs font-black flex items-center gap-2 transition shadow-sm"
                   >
-                    <Printer className="w-4 h-4 text-emerald-300" />
-                    طباعة الملخص المالي لليوم
+                    <Printer className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
+                    طباعة الملخص المالي
                   </button>
                   <button
                     type="button"
@@ -453,37 +586,37 @@ export default function DailyOrdersAndReportsModal({
               </div>
 
               {report && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                  {/* Left: Financial Summary Card (Photo 10) */}
-                  <div className="rounded-2xl border border-white/10 bg-black/35 p-4 space-y-3">
-                    <h4 className="text-sm font-black text-amber-300 border-b border-white/10 pb-2">
-                      الملخص المالي لليوم / الوردية
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Left: Financial Summary Card */}
+                  <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/35 p-4 space-y-3 shadow-sm">
+                    <h4 className="text-sm font-black text-slate-900 dark:text-amber-300 border-b border-slate-200 dark:border-white/10 pb-2">
+                      الملخص المالي للفترة / الوردية
                     </h4>
 
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="p-2.5 rounded-xl bg-white/5 flex justify-between">
-                        <span className="text-white/60">Cash (كاش)</span>
-                        <span className="font-black font-mono text-emerald-300">{report.cash.toFixed(2)}</span>
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-transparent flex justify-between shadow-xs">
+                        <span className="text-slate-500 dark:text-white/60 font-bold">Cash (كاش)</span>
+                        <span className="font-black font-mono text-emerald-600 dark:text-emerald-300">{report.cash.toFixed(2)}</span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-white/5 flex justify-between">
-                        <span className="text-white/60">Visa (فيزا)</span>
-                        <span className="font-black font-mono text-sky-300">{report.visa.toFixed(2)}</span>
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-transparent flex justify-between shadow-xs">
+                        <span className="text-slate-500 dark:text-white/60 font-bold">Visa (فيزا)</span>
+                        <span className="font-black font-mono text-sky-600 dark:text-sky-300">{report.visa.toFixed(2)}</span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-white/5 flex justify-between">
-                        <span className="text-white/60">Insta Pay</span>
-                        <span className="font-black font-mono text-purple-300">{report.instapay.toFixed(2)}</span>
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-transparent flex justify-between shadow-xs">
+                        <span className="text-slate-500 dark:text-white/60 font-bold">Insta Pay</span>
+                        <span className="font-black font-mono text-purple-600 dark:text-purple-300">{report.instapay.toFixed(2)}</span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-white/5 flex justify-between">
-                        <span className="text-white/60">Vodafone Cash</span>
-                        <span className="font-black font-mono text-rose-300">{report.vodafoneCash.toFixed(2)}</span>
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-transparent flex justify-between shadow-xs">
+                        <span className="text-slate-500 dark:text-white/60 font-bold">Vodafone Cash</span>
+                        <span className="font-black font-mono text-rose-600 dark:text-rose-300">{report.vodafoneCash.toFixed(2)}</span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-white/5 flex justify-between">
-                        <span className="text-white/60">Staff / ضيافة</span>
-                        <span className="font-black font-mono">{(report.staff + report.hospitality).toFixed(2)}</span>
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-transparent flex justify-between shadow-xs">
+                        <span className="text-slate-500 dark:text-white/60 font-bold">Staff / ضيافة</span>
+                        <span className="font-black font-mono text-slate-800 dark:text-white">{(report.staff + report.hospitality).toFixed(2)}</span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-white/5 flex justify-between">
-                        <span className="text-white/60">المصروفات / المرتجعات</span>
-                        <span className="font-black font-mono text-amber-300">
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-transparent flex justify-between shadow-xs">
+                        <span className="text-slate-500 dark:text-white/60 font-bold">المصروفات / المرتجعات</span>
+                        <span className="font-black font-mono text-amber-700 dark:text-amber-300">
                           {report.expenses.toFixed(2)} / {report.returnsTotal.toFixed(2)}
                         </span>
                       </div>
@@ -491,56 +624,56 @@ export default function DailyOrdersAndReportsModal({
 
                     <div className="grid grid-cols-3 gap-2 text-xs pt-1">
                       <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
-                        <div className="text-white/60">صالة ({report.dineInCount})</div>
-                        <div className="font-black font-mono text-amber-200 mt-1">{report.dineInSales.toFixed(2)}</div>
+                        <div className="text-slate-600 dark:text-white/60 font-bold">صالة ({report.dineInCount})</div>
+                        <div className="font-black font-mono text-amber-800 dark:text-amber-200 mt-1">{report.dineInSales.toFixed(2)}</div>
                       </div>
                       <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-center">
-                        <div className="text-white/60">تيك أواي ({report.takeawayCount})</div>
-                        <div className="font-black font-mono text-sky-200 mt-1">{report.takeawaySales.toFixed(2)}</div>
+                        <div className="text-slate-600 dark:text-white/60 font-bold">تيك أواي ({report.takeawayCount})</div>
+                        <div className="font-black font-mono text-sky-800 dark:text-sky-200 mt-1">{report.takeawaySales.toFixed(2)}</div>
                       </div>
                       <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
-                        <div className="text-white/60">دليفري ({report.deliveryCount})</div>
-                        <div className="font-black font-mono text-emerald-200 mt-1">{report.deliverySales.toFixed(2)}</div>
+                        <div className="text-slate-600 dark:text-white/60 font-bold">دليفري ({report.deliveryCount})</div>
+                        <div className="font-black font-mono text-emerald-800 dark:text-emerald-200 mt-1">{report.deliverySales.toFixed(2)}</div>
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-gradient-to-l from-amber-500/20 to-emerald-500/15 border border-amber-400/30 flex items-center justify-between">
-                      <span className="font-black text-sm">إجمالي قيمة المبيعات</span>
-                      <span className="font-black font-mono text-xl text-amber-300">
+                    <div className="p-3.5 rounded-xl bg-gradient-to-l from-amber-500/15 via-emerald-500/10 to-transparent border border-amber-400/40 flex items-center justify-between shadow-xs">
+                      <span className="font-black text-sm text-slate-900 dark:text-white">إجمالي قيمة المبيعات</span>
+                      <span className="font-black font-mono text-xl text-amber-700 dark:text-amber-300">
                         {report.grandTotalSales.toFixed(2)} ج.م
                       </span>
                     </div>
                   </div>
 
-                  {/* Right: Category-Grouped Items Breakdown (Photo 9) */}
-                  <div className="rounded-2xl border border-white/10 bg-black/35 p-4 space-y-3 max-h-[420px] overflow-y-auto">
-                    <h4 className="text-sm font-black text-amber-300 border-b border-white/10 pb-2">
+                  {/* Right: Category-Grouped Items Breakdown */}
+                  <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/35 p-4 space-y-3 max-h-[460px] overflow-y-auto shadow-sm">
+                    <h4 className="text-sm font-black text-slate-900 dark:text-amber-300 border-b border-slate-200 dark:border-white/10 pb-2">
                       الأصناف المباعة مقسمة بالأقسام ({report.categories.length} قسم)
                     </h4>
 
                     {report.categories.length === 0 ? (
-                      <div className="py-10 text-center text-white/40 text-xs font-bold">
+                      <div className="py-12 text-center text-slate-400 dark:text-white/40 text-xs font-bold">
                         لا توجد أصناف مباعة في هذه الفترة
                       </div>
                     ) : (
                       report.categories.map((cat) => (
-                        <div key={cat.categoryName} className="rounded-xl border border-white/10 overflow-hidden">
-                          <div className="bg-amber-500/15 px-3 py-1.5 flex items-center justify-between text-xs font-black text-amber-200">
+                        <div key={cat.categoryName} className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-transparent overflow-hidden shadow-xs">
+                          <div className="bg-amber-500/15 px-3 py-1.5 flex items-center justify-between text-xs font-black text-amber-900 dark:text-amber-200 border-b border-amber-500/20">
                             <span>قسم {cat.categoryName}</span>
                             <span className="font-mono">
                               الكمية: {cat.totalQty} • {cat.totalAmount.toFixed(0)} ج.م
                             </span>
                           </div>
-                          <div className="divide-y divide-white/5">
+                          <div className="divide-y divide-slate-100 dark:divide-white/5">
                             {cat.items.map((it) => (
                               <div
                                 key={it.name}
-                                className="px-3 py-1.5 flex items-center justify-between text-xs"
+                                className="px-3 py-1.5 flex items-center justify-between text-xs hover:bg-slate-50 dark:hover:bg-white/[0.03]"
                               >
-                                <span className="font-bold text-white/90">{it.name}</span>
+                                <span className="font-bold text-slate-800 dark:text-white/90">{it.name}</span>
                                 <div className="flex items-center gap-4 font-mono">
-                                  <span className="text-amber-300 font-bold">×{it.qty}</span>
-                                  <span className="font-black min-w-[48px] text-left">
+                                  <span className="text-amber-700 dark:text-amber-300 font-bold">×{it.qty}</span>
+                                  <span className="font-black min-w-[48px] text-left text-slate-900 dark:text-white">
                                     {it.total.toFixed(0)}
                                   </span>
                                 </div>

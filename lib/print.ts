@@ -477,8 +477,8 @@ export function generateDailyItemsReportHtml(data: DailyReportPayload): string {
   </style>
 </head>
 <body>
-  <div class="title">تقرير مبيعات اليوم</div>
-  <div class="subtitle">وردية رقم: ${data.reportNumber} (${data.shiftLabel})</div>
+  <div class="title">${data.dateStr?.includes("إلى") ? "تقرير مبيعات الفترة" : "تقرير مبيعات اليوم"}</div>
+  <div class="subtitle">${data.shiftLabel}</div>
   ${sectionsHtml || '<div style="text-align:center;padding:12px;">لا توجد مبيعات مسجلة في هذه الفترة</div>'}
 </body>
 </html>`;
@@ -535,7 +535,7 @@ export function generateDailyFinancialSummaryHtml(data: DailyReportPayload): str
   </style>
 </head>
 <body>
-  <div class="title">تقرير مبيعات اليوم</div>
+  <div class="title">${data.dateStr?.includes("إلى") ? "تقرير مبيعات الفترة" : "تقرير مبيعات اليوم"}</div>
   <div style="text-align:center;font-size:11px;font-weight:800;margin-bottom:5px;">${data.shiftLabel}</div>
 
   <div class="box">

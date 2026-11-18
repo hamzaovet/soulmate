@@ -79,11 +79,13 @@ html.light :is(
   .bg-\[\#0e0b0a\],
   .bg-\[\#060a14\],
   .bg-\[\#0f0e13\],
+  .bg-\[\#100d14\],
   .bg-\[\#110c14\],
   .bg-\[\#120d0a\],
   .bg-\[\#120d14\],
   .bg-\[\#120e15\],
   .bg-\[\#140e16\],
+  .bg-\[\#14110f\],
   .bg-\[\#161208\],
   .bg-\[\#18080c\]
 ) {
@@ -111,6 +113,8 @@ html.light :is(
 html.light :is(
   .bg-slate-900,
   .bg-stone-900,
+  .bg-\[\#14110f\],
+  .bg-\[\#15110f\],
   .bg-\[\#161210\],
   .bg-\[\#171210\],
   .bg-\[\#171311\],
@@ -160,7 +164,7 @@ html.light .bg-white\/20 {
   background-color: rgba(15, 23, 42, 0.15);
 }
 
-html.light :is(.bg-black\/30, .bg-black\/40) {
+html.light :is(.bg-black\/20, .bg-black\/25, .bg-black\/30, .bg-black\/35, .bg-black\/40) {
   background-color: rgba(241, 245, 249, 0.92);
 }
 html.light :is(.bg-black\/50, .bg-black\/55, .bg-black\/60, .bg-black\/70, .bg-black\/80, .bg-black\/85, .bg-black\/90) {

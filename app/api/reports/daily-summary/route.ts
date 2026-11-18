@@ -25,18 +25,33 @@ function formatDateTimeDMY(d: Date): string {
 export async function GET(req: NextRequest) {
   try {
     const dateParam = req.nextUrl.searchParams.get("date");
+    const startDateParam = req.nextUrl.searchParams.get("startDate") || dateParam;
+    const endDateParam = req.nextUrl.searchParams.get("endDate") || startDateParam;
     const shiftParam = req.nextUrl.searchParams.get("shiftCode") || "ALL"; // ALL | SHIFT_1 | SHIFT_2
 
     const now = new Date();
     let startOfDay: Date;
     let endOfDay: Date;
-    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
-      const [y, m, d] = dateParam.split("-").map(Number);
+
+    if (startDateParam && /^\d{4}-\d{2}-\d{2}$/.test(startDateParam)) {
+      const [y, m, d] = startDateParam.split("-").map(Number);
       startOfDay = new Date(y, m - 1, d, 0, 0, 0, 0);
-      endOfDay = new Date(y, m - 1, d, 23, 59, 59, 999);
     } else {
       startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-      endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    }
+
+    if (endDateParam && /^\d{4}-\d{2}-\d{2}$/.test(endDateParam)) {
+      const [y, m, d] = endDateParam.split("-").map(Number);
+      endOfDay = new Date(y, m - 1, d, 23, 59, 59, 999);
+    } else {
+      endOfDay = new Date(startOfDay.getFullYear(), startOfDay.getMonth(), startOfDay.getDate(), 23, 59, 59, 999);
+    }
+
+    // Safety check if user selects an end date earlier than start date
+    if (endOfDay < startOfDay) {
+      const temp = startOfDay;
+      startOfDay = new Date(endOfDay.getFullYear(), endOfDay.getMonth(), endOfDay.getDate(), 0, 0, 0, 0);
+      endOfDay = new Date(temp.getFullYear(), temp.getMonth(), temp.getDate(), 23, 59, 59, 999);
     }
 
     const orderWhere: any = {
@@ -139,12 +154,19 @@ export async function GET(req: NextRequest) {
 
     const shift1Name = setting?.shift1Name || "الوردية الأولى (الصباحية)";
     const shift2Name = setting?.shift2Name || "الوردية الثانية (المسائية)";
+    const isSingleDay = formatDateDMY(startOfDay) === formatDateDMY(endOfDay);
+    const dateStr = isSingleDay
+      ? formatDateDMY(startOfDay)
+      : `${formatDateDMY(startOfDay)} إلى ${formatDateDMY(endOfDay)}`;
+
     const shiftLabel =
       shiftParam === "SHIFT_1"
         ? shift1Name
         : shiftParam === "SHIFT_2"
         ? shift2Name
-        : "إجمالي اليوم (كل الورديات)";
+        : isSingleDay
+        ? "إجمالي اليوم (كل الورديات)"
+        : `إجمالي مبيعات الفترة (${dateStr})`;
 
     const firstShift = shifts[0];
     const lastShift = shifts[shifts.length - 1];
@@ -162,7 +184,7 @@ export async function GET(req: NextRequest) {
         reportNumber: dayNumber,
         shiftCode: shiftParam,
         shiftLabel,
-        dateStr: formatDateDMY(startOfDay),
+        dateStr,
         openedAt: firstShift?.openedAt ? formatDateTimeDMY(new Date(firstShift.openedAt)) : formatDateTimeDMY(startOfDay),
         openedBy: firstShift?.openedBy || paidOrders[paidOrders.length - 1]?.cashierName || "كاشير سول ميت",
         openingBalance,
