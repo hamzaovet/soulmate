@@ -36,7 +36,10 @@ function getTodayYMD() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function formatPaymentBadge(method?: string) {
+function formatPaymentBadge(method?: string, isTalabat?: boolean) {
+  if (isTalabat || (method || "").toUpperCase() === "TALABAT") {
+    return "طلبات (شركة)";
+  }
   switch ((method || "CASH").toUpperCase()) {
     case "CARD":
     case "VISA":
@@ -56,10 +59,10 @@ function formatPaymentBadge(method?: string) {
   }
 }
 
-function formatOrderTypeAr(type?: string) {
+function formatOrderTypeAr(type?: string, isTalabat?: boolean) {
+  if (isTalabat || type === "TALABAT") return "طلبات (Talabat)";
   if (type === "DINE_IN") return "صالة";
   if (type === "DELIVERY") return "دليفري";
-  if (type === "TALABAT") return "طلبات";
   return "تيك أواي";
 }
 
@@ -76,7 +79,7 @@ export default function DailyOrdersAndReportsModal({
   const [isRangeMode, setIsRangeMode] = useState<boolean>(false);
 
   const [shiftFilter, setShiftFilter] = useState<"ALL" | "SHIFT_1" | "SHIFT_2">("ALL");
-  const [orderTypeTab, setOrderTypeTab] = useState<"ALL" | "DINE_IN" | "TAKEAWAY" | "DELIVERY">("ALL");
+  const [orderTypeTab, setOrderTypeTab] = useState<"ALL" | "DINE_IN" | "TAKEAWAY" | "DELIVERY" | "TALABAT">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -151,13 +154,23 @@ export default function DailyOrdersAndReportsModal({
   if (!open) return null;
 
   const filteredOrders = orders.filter((o) => {
-    if (orderTypeTab !== "ALL" && o.orderType !== orderTypeTab) return false;
+    const isTal = Boolean(
+      o.isTalabat ||
+      o.orderType === "TALABAT" ||
+      (o.paymentMethod || "").toUpperCase() === "TALABAT"
+    );
+    if (orderTypeTab === "TALABAT") {
+      if (!isTal) return false;
+    } else if (orderTypeTab !== "ALL") {
+      if (isTal || o.orderType !== orderTypeTab) return false;
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const hitBon = String(o.dailyTicketNo || "").includes(q);
       const hitNum = String(o.orderNumber || "").toLowerCase().includes(q);
       const hitTbl = String(o.tableNumber || "").toLowerCase().includes(q);
-      return hitBon || hitNum || hitTbl;
+      const hitNotes = String(o.notes || "").toLowerCase().includes(q);
+      return hitBon || hitNum || hitTbl || hitNotes;
     }
     return true;
   });
@@ -415,6 +428,7 @@ export default function DailyOrdersAndReportsModal({
                     { key: "DINE_IN", label: "صالة" },
                     { key: "TAKEAWAY", label: "تيك أواي" },
                     { key: "DELIVERY", label: "دليفري / استلام" },
+                    { key: "TALABAT", label: "طلبات 🟠" },
                   ].map((t) => (
                     <button
                       key={t.key}
@@ -422,7 +436,9 @@ export default function DailyOrdersAndReportsModal({
                       onClick={() => setOrderTypeTab(t.key as any)}
                       className={`px-4 py-1.5 rounded-xl text-xs font-black border transition ${
                         orderTypeTab === t.key
-                          ? "bg-amber-500/20 border-amber-500 text-amber-900 dark:text-amber-200 shadow-sm"
+                          ? t.key === "TALABAT"
+                            ? "bg-orange-500/20 border-orange-500 text-orange-950 dark:text-orange-200 shadow-sm"
+                            : "bg-amber-500/20 border-amber-500 text-amber-900 dark:text-amber-200 shadow-sm"
                           : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white"
                       }`}
                     >
@@ -487,10 +503,16 @@ export default function DailyOrdersAndReportsModal({
                               {dateFormatted}
                             </td>
                             <td className="py-2.5 px-3 font-bold">
-                              {formatOrderTypeAr(o.orderType)} — {o.cashierName || "كاشير"}
+                              {o.isTalabat || o.orderType === "TALABAT" ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-black bg-orange-500/20 text-orange-900 dark:text-orange-200 border border-orange-500/30">
+                                  طلبات 🟠
+                                </span>
+                              ) : (
+                                `${formatOrderTypeAr(o.orderType)} — ${o.cashierName || "كاشير"}`
+                              )}
                             </td>
                             <td className="py-2.5 px-3 font-bold">
-                              {o.tableNumber ? `طاولة ${o.tableNumber}` : "—"}
+                              {o.tableNumber ? `طاولة ${o.tableNumber}` : o.isTalabat ? "طلب عبر التطبيق" : "—"}
                             </td>
                             <td className="py-2.5 px-3 font-black font-mono">
                               {Number(o.finalAmount || 0).toFixed(2)}
@@ -518,7 +540,13 @@ export default function DailyOrdersAndReportsModal({
                               {o.shiftCode === "SHIFT_2" ? "وردية 2" : "وردية 1"}
                             </td>
                             <td className="py-2.5 px-3 font-bold">
-                              {formatPaymentBadge(o.paymentMethod)}
+                              {o.isTalabat || (o.paymentMethod || "").toUpperCase() === "TALABAT" ? (
+                                <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-orange-500/20 text-orange-900 dark:text-orange-200 border border-orange-500/30">
+                                  طلبات (تسوية شركة)
+                                </span>
+                              ) : (
+                                formatPaymentBadge(o.paymentMethod)
+                              )}
                             </td>
                             <td className="py-2.5 px-3 text-center">
                               <button
@@ -622,26 +650,86 @@ export default function DailyOrdersAndReportsModal({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 text-xs pt-1">
-                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
+                    {/* 4 Sales Channels */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1">
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
                         <div className="text-slate-600 dark:text-white/60 font-bold">صالة ({report.dineInCount})</div>
                         <div className="font-black font-mono text-amber-800 dark:text-amber-200 mt-1">{report.dineInSales.toFixed(2)}</div>
                       </div>
-                      <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-center">
+                      <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-center">
                         <div className="text-slate-600 dark:text-white/60 font-bold">تيك أواي ({report.takeawayCount})</div>
                         <div className="font-black font-mono text-sky-800 dark:text-sky-200 mt-1">{report.takeawaySales.toFixed(2)}</div>
                       </div>
-                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+                      <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
                         <div className="text-slate-600 dark:text-white/60 font-bold">دليفري ({report.deliveryCount})</div>
                         <div className="font-black font-mono text-emerald-800 dark:text-emerald-200 mt-1">{report.deliverySales.toFixed(2)}</div>
                       </div>
+                      <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-center">
+                        <div className="text-slate-600 dark:text-white/60 font-bold">طلبات 🟠 ({report.talabatCount || 0})</div>
+                        <div className="font-black font-mono text-orange-800 dark:text-orange-300 mt-1">{(report.talabatGross || 0).toFixed(2)}</div>
+                      </div>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-gradient-to-l from-amber-500/15 via-emerald-500/10 to-transparent border border-amber-400/40 flex items-center justify-between shadow-xs">
-                      <span className="font-black text-sm text-slate-900 dark:text-white">إجمالي قيمة المبيعات</span>
-                      <span className="font-black font-mono text-xl text-amber-700 dark:text-amber-300">
-                        {report.grandTotalSales.toFixed(2)} ج.م
-                      </span>
+                    {/* Dedicated Talabat Settlement Card (Gross, Commission %, Net Receivable) */}
+                    {((report.talabatGross || 0) > 0 || (report.talabatCount || 0) > 0) && (
+                      <div className="rounded-xl border border-orange-500/35 bg-orange-500/10 p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black text-orange-950 dark:text-orange-200 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                            حسابات تطبيق طلبات (Talabat) 🟠 — تسوية الشركة (خارج الدرج)
+                          </span>
+                          <span className="text-[11px] font-bold text-orange-800 dark:text-orange-300">
+                            {report.talabatCount || 0} أوردر
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                          <div className="p-2 rounded-lg bg-white/70 dark:bg-black/40 border border-orange-500/20">
+                            <div className="text-[10px] text-slate-500 dark:text-white/60 font-bold">إجمالي مبيعات طلبات</div>
+                            <div className="font-black font-mono text-orange-700 dark:text-orange-300 mt-0.5">
+                              {(report.talabatGross || 0).toFixed(2)} ج.م
+                            </div>
+                          </div>
+                          <div className="p-2 rounded-lg bg-white/70 dark:bg-black/40 border border-orange-500/20">
+                            <div className="text-[10px] text-slate-500 dark:text-white/60 font-bold">
+                              عمولة طلبات ({report.talabatCommissionPercent || 25}%)
+                            </div>
+                            <div className="font-black font-mono text-rose-600 dark:text-rose-400 mt-0.5">
+                              -{(report.talabatCommission || 0).toFixed(2)} ج.م
+                            </div>
+                          </div>
+                          <div className="p-2 rounded-lg bg-white/70 dark:bg-black/40 border border-orange-500/20">
+                            <div className="text-[10px] text-slate-500 dark:text-white/60 font-bold">صافي المستحق من طلبات</div>
+                            <div className="font-black font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+                              {(report.talabatNet || 0).toFixed(2)} ج.م
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-orange-900/80 dark:text-orange-200/80 font-bold text-center">
+                          💡 لا تُحسب ضمن نقدية الدرج الفعلي للكاشير منعاً لأي عجز وهمي، وتُسوّى دورياً مع شركة طلبات.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Food & Beverage Sales vs Delivery Fees Separation */}
+                    <div className="rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-3 space-y-1.5 text-xs shadow-xs">
+                      <div className="flex justify-between items-center text-slate-700 dark:text-white/80">
+                        <span className="font-bold">صافي مبيعات الأصناف (الأغذية والمشروبات):</span>
+                        <span className="font-black font-mono text-slate-900 dark:text-white">
+                          {(report.productSalesOnly ?? Math.max(0, report.grandTotalSales - report.deliveryFees)).toFixed(2)} ج.م
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-700 dark:text-white/80">
+                        <span className="font-bold">رسوم وخدمة التوصيل (Delivery Fees):</span>
+                        <span className="font-black font-mono text-emerald-600 dark:text-emerald-400">
+                          {report.deliveryFees.toFixed(2)} ج.م
+                        </span>
+                      </div>
+                      <div className="border-t border-dashed border-slate-200 dark:border-white/10 pt-1.5 flex justify-between items-center">
+                        <span className="font-black text-sm text-slate-900 dark:text-white">إجمالي المبيعات والتحصيل (شامل التوصيل):</span>
+                        <span className="font-black font-mono text-xl text-amber-700 dark:text-amber-300">
+                          {report.grandTotalSales.toFixed(2)} ج.م
+                        </span>
+                      </div>
                     </div>
                   </div>
 

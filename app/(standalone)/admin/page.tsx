@@ -7497,7 +7497,7 @@ export default function AdminDashboardPage() {
                     </label>
                     <input
                       type="text"
-                      placeholder="01557879033"
+                      placeholder="01271673463"
                       value={settings.soulmatePhone || ""}
                       onChange={(e) =>
                         setSettings({ ...settings, soulmatePhone: e.target.value })
@@ -7512,7 +7512,7 @@ export default function AdminDashboardPage() {
                     </label>
                     <input
                       type="text"
-                      placeholder="01557879033"
+                      placeholder="01271673463"
                       value={settings.whatsapp || ""}
                       onChange={(e) =>
                         setSettings({ ...settings, whatsapp: e.target.value })

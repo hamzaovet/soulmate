@@ -72,7 +72,7 @@ interface DeliveryZone {
 const ACTIVE_ORDER_STORAGE_KEY = "soulmate_active_delivery_order_id";
 
 function normalizeEgyptWa(phone?: string | null): string {
-  const digits = String(phone || "01557879033").replace(/[^\d]/g, "");
+  const digits = String(phone || "01271673463").replace(/[^\d]/g, "");
   if (digits.startsWith("20") && digits.length >= 12) return digits;
   if (digits.startsWith("0")) return `2${digits}`;
   return `20${digits}`;
@@ -185,9 +185,9 @@ export default function SoulmateDeliveryPage() {
   const loadStaticData = useCallback(async () => {
     try {
       const [menuRes, settingsRes, zonesRes] = await Promise.all([
-        fetch("/api/menu?outletId=SOULMATE_CAFE"),
-        fetch("/api/settings"),
-        fetch("/api/delivery-zones"),
+        fetch("/api/menu?outletId=SOULMATE_CAFE", { cache: "no-store" }),
+        fetch("/api/settings", { cache: "no-store" }),
+        fetch("/api/delivery-zones", { cache: "no-store" }),
       ]);
       const [menuData, settingsData, zonesData] = await Promise.all([
         menuRes.json(),
@@ -339,9 +339,9 @@ export default function SoulmateDeliveryPage() {
   const cartSubtotal = cart.reduce((s, c) => s + c.price * c.qty, 0);
   const grandTotal = cartSubtotal + deliveryFee;
 
-  const instapayValue = settings?.instapayAccount || "01271673463";
-  const walletValue = settings?.vodafoneCashNumber || settings?.soulmatePhone || "01557879033";
-  const receiptWhatsappRaw = settings?.whatsapp || settings?.soulmatePhone || "01557879033";
+  const instapayValue = settings?.instapayAccount?.trim() || "01271673463";
+  const walletValue = settings?.vodafoneCashNumber?.trim() || "01271673463";
+  const receiptWhatsappRaw = settings?.whatsapp?.trim() || settings?.soulmatePhone?.trim() || "01271673463";
   const receiptWhatsappWa = normalizeEgyptWa(receiptWhatsappRaw);
 
   const handleCopy = (val: string, key: string) => {

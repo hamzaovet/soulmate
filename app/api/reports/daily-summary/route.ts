@@ -86,9 +86,17 @@ export async function GET(req: NextRequest) {
     const paidOrders = orders.filter((o) => o.paymentStatus === "PAID" && o.status !== "CANCELLED");
     const cancelledOrders = orders.filter((o) => o.status === "CANCELLED");
 
+    // Talabat classifier
+    const isTalabat = (o: any) =>
+      o.orderType === "TALABAT" || (o.paymentMethod || "").toUpperCase() === "TALABAT";
+
+    const talabatOrders = paidOrders.filter(isTalabat);
+    const inStorePaidOrders = paidOrders.filter((o) => !isTalabat(o));
+
     // 1. Payment Breakdown (Photo 10)
+    // Talabat is excluded from cash drawer so it does not cause an artificial cash deficit
     const sumByPay = (codes: string[]) =>
-      paidOrders
+      inStorePaidOrders
         .filter((o) => codes.includes((o.paymentMethod || "CASH").toUpperCase()))
         .reduce((s, o) => s + (Number(o.finalAmount) || 0), 0);
 
@@ -101,18 +109,37 @@ export async function GET(req: NextRequest) {
     const credit = sumByPay(["CREDIT"]);
     const tips = paidOrders.reduce((s, o) => s + (Number(o.tipAmount) || 0), 0);
 
-    // 2. Order Types Breakdown (Photo 10)
-    const takeawayOrders = paidOrders.filter((o) => o.orderType === "TAKEAWAY");
+    // 2. Talabat Accounting (Gross, Commission, Net Receivable - outside drawer)
+    const talabatGross = talabatOrders.reduce((s, o) => s + (Number(o.finalAmount) || 0), 0);
+    const talabatCommissionPercent = Number(setting?.talabatCommissionPercent ?? 25) || 25;
+    const talabatCommission = talabatOrders.reduce(
+      (s, o) =>
+        s +
+        (Number(o.commissionAmount) ||
+          ((Number(o.finalAmount) || 0) * talabatCommissionPercent) / 100),
+      0
+    );
+    const talabatNet = Math.max(0, talabatGross - talabatCommission);
+    const talabatCount = talabatOrders.length;
+
+    // 3. Order Types Breakdown (Photo 10)
+    const takeawayOrders = paidOrders.filter((o) => o.orderType === "TAKEAWAY" && !isTalabat(o));
     const dineInOrders = paidOrders.filter((o) => o.orderType === "DINE_IN");
-    const deliveryOrders = paidOrders.filter((o) => o.orderType === "DELIVERY");
+    const deliveryOrders = paidOrders.filter((o) => o.orderType === "DELIVERY" && !isTalabat(o));
 
     const takeawaySales = takeawayOrders.reduce((s, o) => s + (Number(o.finalAmount) || 0), 0);
     const dineInSales = dineInOrders.reduce((s, o) => s + (Number(o.finalAmount) || 0), 0);
     const dineInService = dineInOrders.reduce((s, o) => s + (Number(o.serviceCharge) || 0), 0);
-    const deliverySales = deliveryOrders.reduce((s, o) => s + (Number(o.finalAmount) || 0), 0);
+
+    // Explicitly separate delivery product sales from delivery fees
+    const deliveryGrossSales = deliveryOrders.reduce((s, o) => s + (Number(o.finalAmount) || 0), 0);
     const deliveryFees = deliveryOrders.reduce((s, o) => s + (Number(o.deliveryFee) || 0), 0);
+    const deliveryFoodSales = Math.max(0, deliveryGrossSales - deliveryFees);
 
     const grandTotalSales = paidOrders.reduce((s, o) => s + (Number(o.finalAmount) || 0), 0);
+    // Pure product sales (food & drinks) without delivery fees
+    const productSalesOnly = Math.max(0, grandTotalSales - deliveryFees);
+
     const expensesTotal = expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
     const returnsTotal = cancelledOrders.reduce((s, o) => s + (Number(o.finalAmount) || 0), 0);
 
@@ -211,9 +238,16 @@ export async function GET(req: NextRequest) {
         dineInSales,
         dineInCount: dineInOrders.length,
         dineInService,
-        deliverySales,
+        deliverySales: deliveryGrossSales,
+        deliveryFoodSales,
         deliveryCount: deliveryOrders.length,
         deliveryFees,
+        talabatGross,
+        talabatCommissionPercent,
+        talabatCommission,
+        talabatNet,
+        talabatCount,
+        productSalesOnly,
         grandTotalSales,
         difference,
         categories,
@@ -224,6 +258,7 @@ export async function GET(req: NextRequest) {
         dailyTicketNo: o.dailyTicketNo,
         orderNumber: o.orderNumber,
         orderType: o.orderType,
+        isTalabat: isTalabat(o),
         tableNumber: o.tableNumber,
         cashierName: o.cashierName || "كاشير",
         waiterName: o.waiterName || "",
@@ -233,6 +268,8 @@ export async function GET(req: NextRequest) {
         paymentStatus: o.paymentStatus,
         paymentMethod: o.paymentMethod,
         finalAmount: o.finalAmount,
+        deliveryFee: Number(o.deliveryFee) || 0,
+        commissionAmount: Number(o.commissionAmount) || 0,
         paidAmount: o.paymentStatus === "PAID" ? o.finalAmount : 0,
         remainingAmount: o.paymentStatus === "PAID" ? 0 : o.finalAmount,
         notes: o.notes,

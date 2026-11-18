@@ -150,7 +150,7 @@ export function generateSoulmateReceiptHtml(order: any, settings?: any): string 
     : "";
 
   const address = settings?.cafeAddress || "99st zamza mn elshisk 8orab";
-  const phone = settings?.soulmatePhone || settings?.whatsapp || "01557879033";
+  const phone = settings?.soulmatePhone || settings?.whatsapp || "01271673463";
 
   const rowsHtml = items
     .map((it) => {
@@ -396,8 +396,15 @@ export interface DailyReportPayload {
   dineInCount: number;
   dineInService: number;
   deliverySales: number;
+  deliveryFoodSales?: number;
   deliveryCount: number;
   deliveryFees: number;
+  talabatGross?: number;
+  talabatCommissionPercent?: number;
+  talabatCommission?: number;
+  talabatNet?: number;
+  talabatCount?: number;
+  productSalesOnly?: number;
   grandTotalSales: number;
   difference: number;
   categories: DailyReportCategorySection[];
@@ -579,12 +586,23 @@ export function generateDailyFinancialSummaryHtml(data: DailyReportPayload): str
     ${row("عدد الفواتير الصالة", String(data.dineInCount))}
     ${row("قيمة خدمة الصالة", data.dineInService.toFixed(2))}
     <div class="div-line"></div>
-    ${row("قيمة مبيعات الدليفري", data.deliverySales.toFixed(2))}
+    ${row("مبيعات اصناف الدليفري", (data.deliveryFoodSales ?? Math.max(0, data.deliverySales - data.deliveryFees)).toFixed(2))}
+    ${row("رسوم خدمة التوصيل", data.deliveryFees.toFixed(2))}
+    ${row("اجمالى مبيعات الدليفري", data.deliverySales.toFixed(2))}
     ${row("عدد الفواتير الدليفري", String(data.deliveryCount))}
-    ${row("قيمة خدمة التوصيل", data.deliveryFees.toFixed(2))}
+
+    ${(data.talabatGross || 0) > 0 ? `
+    <div class="sec-head" style="background:#fed7aa !important; color:#7c2d12;">حسابات تطبيق طلبات (Talabat) — تسوية الشركة</div>
+    ${row("اجمالى مبيعات طلبات", (data.talabatGross || 0).toFixed(2))}
+    ${row(`عمولة طلبات (${data.talabatCommissionPercent || 25}%)`, `-${(data.talabatCommission || 0).toFixed(2)}`)}
+    ${row("صافى المستحق من طلبات", (data.talabatNet || 0).toFixed(2), true)}
+    ${row("عدد فواتير طلبات", String(data.talabatCount || 0))}
+    <div style="font-size:9.5px;color:#78350f;padding:2px 6px;text-align:center;">* مبيعات طلبات تسوّى مع الشركة وخارج درج الكاشير</div>
+    ` : ""}
 
     <div class="div-line"></div>
-    ${row("اجمالى قيمة المبيعات", data.grandTotalSales.toFixed(2), true)}
+    ${row("صافى مبيعات الاصناف (اغذية ومشروبات)", (data.productSalesOnly ?? Math.max(0, data.grandTotalSales - data.deliveryFees)).toFixed(2), true)}
+    ${row("اجمالى المبيعات والتحصيل (شامل التوصيل)", data.grandTotalSales.toFixed(2), true)}
     <div class="div-line"></div>
     ${row("اجمالى الفرق", data.difference.toFixed(2), true)}
   </div>

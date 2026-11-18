@@ -12,13 +12,22 @@ export async function GET() {
       });
     }
     const { geminiApiKey: storedKey, vapidPrivateKey: _vp, ...safeSettings } = settings;
-    return NextResponse.json({
-      success: true,
-      settings: {
-        ...safeSettings,
-        hasGeminiKey: Boolean(process.env.GEMINI_API_KEY || storedKey),
+    return NextResponse.json(
+      {
+        success: true,
+        settings: {
+          ...safeSettings,
+          hasGeminiKey: Boolean(process.env.GEMINI_API_KEY || storedKey),
+        },
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -115,13 +124,22 @@ export async function PATCH(req: Request) {
     });
 
     const { geminiApiKey: storedKey, vapidPrivateKey: _vp, ...safeSettings } = settings;
-    return NextResponse.json({
-      success: true,
-      settings: {
-        ...safeSettings,
-        hasGeminiKey: Boolean(process.env.GEMINI_API_KEY || storedKey),
+    return NextResponse.json(
+      {
+        success: true,
+        settings: {
+          ...safeSettings,
+          hasGeminiKey: Boolean(process.env.GEMINI_API_KEY || storedKey),
+        },
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

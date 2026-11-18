@@ -86,7 +86,7 @@ interface DiningTable {
 }
 
 function normalizeEgyptWa(phone?: string | null): string {
-  const digits = String(phone || "01557879033").replace(/[^\d]/g, "");
+  const digits = String(phone || "01271673463").replace(/[^\d]/g, "");
   if (digits.startsWith("20") && digits.length >= 12) return digits;
   if (digits.startsWith("0")) return `2${digits}`;
   return `20${digits}`;
@@ -168,9 +168,9 @@ function SoulmateHallOrderInner() {
   const loadData = useCallback(async () => {
     try {
       const [menuRes, tablesRes, settingsRes] = await Promise.all([
-        fetch("/api/menu?outletId=SOULMATE_CAFE"),
-        fetch("/api/tables"),
-        fetch("/api/settings"),
+        fetch("/api/menu?outletId=SOULMATE_CAFE", { cache: "no-store" }),
+        fetch("/api/tables", { cache: "no-store" }),
+        fetch("/api/settings", { cache: "no-store" }),
       ]);
       const [menuData, tablesData, settingsData] = await Promise.all([
         menuRes.json(),
@@ -481,9 +481,9 @@ function SoulmateHallOrderInner() {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const instapayValue = settings?.instapayAccount || "01271673463";
-  const walletValue = settings?.vodafoneCashNumber || settings?.soulmatePhone || "01557879033";
-  const receiptWhatsappRaw = settings?.whatsapp || settings?.soulmatePhone || "01557879033";
+  const instapayValue = settings?.instapayAccount?.trim() || "01271673463";
+  const walletValue = settings?.vodafoneCashNumber?.trim() || "01271673463";
+  const receiptWhatsappRaw = settings?.whatsapp?.trim() || settings?.soulmatePhone?.trim() || "01271673463";
   const receiptWhatsappWa = normalizeEgyptWa(receiptWhatsappRaw);
 
   const buildWhatsappReceiptLink = (methodLabel: string) => {
