@@ -46,14 +46,23 @@ export async function GET(req: Request) {
 
     const parsedTickets = tickets.map((t) => {
       let items: any[] = [];
+      let roundNote: string | null = null;
       try {
-        items = typeof t.itemsSummary === "string" ? JSON.parse(t.itemsSummary) : t.itemsSummary;
+        const parsed = typeof t.itemsSummary === "string" ? JSON.parse(t.itemsSummary) : t.itemsSummary;
+        if (Array.isArray(parsed)) {
+          items = parsed;
+          roundNote = t.order?.notes || null;
+        } else if (parsed && Array.isArray(parsed.items)) {
+          items = parsed.items;
+          roundNote = parsed.roundNote || null;
+        }
       } catch {
         items = [];
       }
       return {
         ...t,
         items,
+        roundNote,
       };
     });
 
@@ -70,6 +79,35 @@ export async function PATCH(req: Request) {
 
     if (!ticketId || !status) {
       return NextResponse.json({ success: false, error: "معرف التذكرة والحالة مطلوبين" }, { status: 400 });
+    }
+
+    // Handle 1-click Fake/Prank Order Rejection from KDS
+    if (status === "CANCELLED") {
+      const ticket = await prisma.kdsTicket.update({
+        where: { id: ticketId },
+        data: { status: "CANCELLED", completedAt: new Date() },
+        include: { order: true },
+      });
+      // If no other non-cancelled tickets remain on this order, cancel the order and free table
+      const otherActive = await prisma.kdsTicket.count({
+        where: {
+          orderId: ticket.orderId,
+          status: { not: "CANCELLED" },
+        },
+      });
+      if (otherActive === 0) {
+        await prisma.order.update({
+          where: { id: ticket.orderId },
+          data: { status: "CANCELLED" },
+        });
+        if (ticket.order?.tableId) {
+          await prisma.diningTable.update({
+            where: { id: ticket.order.tableId },
+            data: { status: "AVAILABLE", activeOrderId: null },
+          });
+        }
+      }
+      return NextResponse.json({ success: true, ticket, cancelled: true });
     }
 
     const ticket = await prisma.kdsTicket.update({

@@ -100,6 +100,17 @@ export default function SoulmateHomePage() {
           </div>
           <PwaInstallButton variant="button" />
         </div>
+
+        {/* Orca Tech Developer Signature */}
+        <div className="pt-3 border-t border-white/5 text-[11px] text-amber-200/55 flex flex-wrap items-center justify-center gap-2">
+          <span>
+            تطوير <strong className="text-amber-300">شركة أوركا للحلول البرمجية (Orca Tech) 🐬</strong>
+          </span>
+          <span>•</span>
+          <a href="tel:01018671000" className="font-mono font-bold text-amber-200/80 hover:text-amber-300">
+            📞 01018671000
+          </a>
+        </div>
       </div>
     </div>
   );

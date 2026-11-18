@@ -135,7 +135,16 @@ function getStatusMeta(status?: string, orderType?: string) {
 
 export default function SoulmateDeliveryPage() {
   const [mode, setMode] = useState<"DELIVERY" | "TAKEAWAY">("DELIVERY");
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const cached = localStorage.getItem("soulmate_menu_cache_v1");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loadingMenu, setLoadingMenu] = useState<boolean>(true);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [settings, setSettings] = useState<any>(null);
   const [outletId, setOutletId] = useState<string>("");
@@ -187,6 +196,9 @@ export default function SoulmateDeliveryPage() {
       if (menuData.success && Array.isArray(menuData.items)) {
         const available = menuData.items.filter((i: MenuItem) => i.isAvailable !== false);
         setMenuItems(available);
+        try {
+          localStorage.setItem("soulmate_menu_cache_v1", JSON.stringify(available));
+        } catch {}
         if (available[0]?.outletId) setOutletId(available[0].outletId);
       }
       if (settingsData.success && settingsData.settings) {
@@ -201,6 +213,8 @@ export default function SoulmateDeliveryPage() {
       }
     } catch (e) {
       console.error("Failed loading delivery page data", e);
+    } finally {
+      setLoadingMenu(false);
     }
   }, [selectedZoneId]);
 
@@ -896,7 +910,28 @@ export default function SoulmateDeliveryPage() {
       {/* Main Layout */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-5 pb-28 lg:pb-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <section className="lg:col-span-8 space-y-6">
-          {groupedByCategory.map((group) => (
+          {loadingMenu && menuItems.length === 0 ? (
+            <div className="space-y-4">
+              <div className="text-center text-xs font-bold text-emerald-300/80 py-2">
+                ☕ جاري تحميل منيو Soulmate...
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {Array.from({ length: 8 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-2xl border border-white/10 bg-[#171210] p-3 flex items-center gap-3 animate-pulse"
+                  >
+                    <div className="w-16 h-16 rounded-xl bg-white/10 shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3.5 bg-white/10 rounded w-3/4" />
+                      <div className="h-2.5 bg-white/5 rounded w-1/2" />
+                      <div className="h-5 bg-amber-500/15 rounded w-1/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : groupedByCategory.map((group) => (
             <div key={group.code} className="space-y-3">
               <div className="flex items-center gap-2 border-b border-amber-500/20 pb-2">
                 <Sparkles className="w-4 h-4 text-amber-400" />
@@ -981,11 +1016,19 @@ export default function SoulmateDeliveryPage() {
           ))}
         </section>
 
-        {/* Desktop Checkout Sidebar */}
-        <aside className="hidden lg:block lg:col-span-4 sticky top-32 rounded-3xl border border-emerald-500/25 bg-[#161210] shadow-2xl overflow-hidden">
+        {/* Desktop Checkout Sidebar (Scrollable so bottom button is NEVER cut off!) */}
+        <aside className="hidden lg:block lg:col-span-4 sticky top-32 max-h-[calc(100vh-8.5rem)] overflow-y-auto rounded-3xl border border-emerald-500/25 bg-[#161210] shadow-2xl">
           {renderCheckoutSidebar()}
         </aside>
       </main>
+
+      {/* Orca Tech Developer Footer */}
+      <footer className="pb-24 lg:pb-6 pt-3 text-center text-[11px] text-amber-200/45 border-t border-white/5">
+        تطوير <strong className="text-amber-300/80">شركة أوركا للحلول البرمجية (Orca Tech) 🐬</strong> •{" "}
+        <a href="tel:01018671000" className="font-mono hover:text-amber-300">
+          01018671000
+        </a>
+      </footer>
 
       {/* Mobile Floating Bar */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-3 bg-gradient-to-t from-[#0e0b0a] via-[#0e0b0a]/95 to-transparent">

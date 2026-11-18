@@ -2556,21 +2556,6 @@ export default function AdminDashboardPage() {
               </button>
             )}
 
-            {/* Pastry Tab (Abu Adel only) */}
-            {(isViewingAll || isViewingAbuAdel) && (
-              <button
-                onClick={() => setActiveTab("pastry")}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-                  activeTab === "pastry"
-                    ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                }`}
-              >
-                <Cake className="w-4 h-4" />
-                <span>مخزن حلويات أبو عادل ({abuAdelPastryList.length > 0 ? abuAdelPastryList.length : 230} صنف)</span>
-              </button>
-            )}
-
             <button
               onClick={() => setActiveTab("orders")}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
@@ -2583,22 +2568,20 @@ export default function AdminDashboardPage() {
               <span>سجل الطلبات والدليفري</span>
             </button>
 
-            {/* Reservations Tab (Soulmate only) */}
-            {(isViewingAll || isViewingSoulmate) && (
-              <button
-                onClick={() => setActiveTab("reservations")}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-                  activeTab === "reservations"
-                    ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                }`}
-              >
-                <Calendar className="w-4 h-4" />
-                <span>حجوزات الترابيزات والحفلات ({reservations.length})</span>
-              </button>
-            )}
+            {/* Reservations Tab (Soulmate) */}
+            <button
+              onClick={() => setActiveTab("reservations")}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+                activeTab === "reservations"
+                  ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              <span>حجوزات الترابيزات والحفلات ({reservations.length})</span>
+            </button>
 
-            {/* Chat Tab (Available for BOTH Soulmate & Abu Adel!) */}
+            {/* Chat Tab (Soulmate) */}
             <button
               onClick={() => setActiveTab("chat")}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
@@ -2609,11 +2592,11 @@ export default function AdminDashboardPage() {
             >
               <MessageCircle className="w-4 h-4" />
               <span>
-                {isViewingAbuAdel ? "شات عملاء حلواني أبو عادل" : "شات العملاء والمحلات"} ({chatMessages.length})
+                شات عملاء سول ميت ({chatMessages.length})
               </span>
             </button>
 
-            {/* Loyalty, CRM & Offers Tab (Both Abu Adel & Soulmate!) */}
+            {/* Loyalty, CRM & Offers Tab */}
             <button
               onClick={() => setActiveTab("loyalty")}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
@@ -2639,7 +2622,7 @@ export default function AdminDashboardPage() {
                 }`}
               >
                 <Factory className="w-4 h-4" />
-                <span>المصنع والموردين والـ AI 🏭🤖</span>
+                <span>الموردين والمشتريات والـ AI 🤖</span>
                 {dailyAlertStatus.urgentRawCount > 0 && (
                   <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-rose-500 text-white font-black">
                     {dailyAlertStatus.urgentRawCount}
@@ -7666,15 +7649,110 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
+              {/* ANTI-PRANK HALL PASSCODE PROTECTION PANEL */}
+              <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl p-6 shadow-lg space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
+                      <span>🛡️ حماية الصالة من الطلبات الوهمية (من خارج الكافيه)</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      عند التفعيل، يُطلب من عميل الصالة إدخال كود الصالة اليومي مرة واحدة قبل إرسال الطلب (يمكن كتابته على الكاونتر أو بجانب الواي فاي وتغييره يومياً).
+                    </p>
+                  </div>
+                  <label className="inline-flex items-center gap-2 cursor-pointer bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(settings.hallPasscodeEnabled)}
+                      onChange={(e) =>
+                        setSettings({ ...settings, hallPasscodeEnabled: e.target.checked })
+                      }
+                      className="w-4 h-4 accent-emerald-500"
+                    />
+                    <span className="text-xs font-black text-white">
+                      {settings.hallPasscodeEnabled ? "مفعّل ✅" : "غير مفعّل"}
+                    </span>
+                  </label>
+                </div>
+
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block text-xs text-slate-400 mb-1.5">
+                      كود الصالة اليومي (4 أرقام)
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.hallPasscode || "2026"}
+                      onChange={(e) =>
+                        setSettings({ ...settings, hallPasscode: e.target.value })
+                      }
+                      className="w-full bg-slate-950 border border-emerald-500/40 rounded-xl px-3 py-2 text-sm text-emerald-300 font-mono font-black tracking-widest focus:outline-none focus:border-emerald-400"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const rnd = String(Math.floor(1000 + Math.random() * 9000));
+                      setSettings({ ...settings, hallPasscode: rnd });
+                    }}
+                    className="px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-200 text-xs font-black transition cursor-pointer"
+                  >
+                    توليد كود عشوائي جديد 🎲
+                  </button>
+                </div>
+              </div>
+
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="bg-amber-500 hover:bg-amber-400 text-black font-black px-6 py-2.5 rounded-xl text-xs shadow-lg transition"
+                  className="bg-amber-500 hover:bg-amber-400 text-black font-black px-6 py-2.5 rounded-xl text-xs shadow-lg transition cursor-pointer"
                 >
                   حفظ كافة التعديلات والإعدادات
                 </button>
               </div>
             </form>
+
+            {/* PROTECTED RESET TEST DATA PANEL */}
+            <div className="bg-rose-950/25 border border-rose-500/35 rounded-2xl p-6 shadow-lg space-y-4">
+              <div>
+                <h3 className="text-sm font-black text-rose-300 flex items-center gap-2">
+                  <span>🧹 مسح البيانات التجريبية وتصفير الأوردرات (بعد التجربة في الكافيه)</span>
+                </h3>
+                <p className="text-xs text-rose-200/75 mt-1 leading-relaxed">
+                  يقوم هذا الزر بمسح الأوردرات التجريبية وتذاكر البار والورديات والمصروفات وتفريغ جميع الطاولات فقط — مع <strong>الحفاظ الكامل 100% على المنيو (114 صنف) والحسابات والإعدادات</strong>.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const pin = window.prompt(
+                      "⚠️ تأكيد مسح كافة البيانات التجريبية وتصفير الأوردرات:\nأدخل رمز PIN الخاص بالمالك أو المدير للتأكيد:"
+                    );
+                    if (!pin || !pin.trim()) return;
+                    try {
+                      const res = await fetch("/api/admin/reset-test-data", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ pin: pin.trim() }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        addToast("success", data.message || "تم مسح البيانات التجريبية بنجاح ✅");
+                        fetchDashboardData();
+                      } else {
+                        addToast("error", data.error || "فشل المسح");
+                      }
+                    } catch {
+                      addToast("error", "تعذر الاتصال بالسيرفر");
+                    }
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-lg shadow-rose-600/20 transition cursor-pointer"
+                >
+                  🧹 مسح البيانات التجريبية وتصفير الأوردرات الآن
+                </button>
+              </div>
+            </div>
           </div>
         )}
         {/* Orca Tech Developer Signature */}

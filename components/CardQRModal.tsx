@@ -142,7 +142,7 @@ export default function CardQRModal({
       <span>2️⃣ اختر طاولتك</span>
       <span>3️⃣ اطلب واستمتع</span>
     </div>
-    <div class="footer">${soulmatePhone}</div>
+    <div class="footer">تطوير شركة أوركا للحلول البرمجية (Orca Tech) 🐬 • 📞 01018671000</div>
   </div>
   <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 450); };</script>
 </body>

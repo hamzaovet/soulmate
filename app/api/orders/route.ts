@@ -397,22 +397,20 @@ async function applyInventoryDelta(
   }
 }
 
-// Helper: Create KDS Tickets for Barista / Kitchen Stations
-async function createKdsTickets(items: any[], orderId: string) {
-  const baristaItems = items.filter(
-    (i: any) =>
-      i.category?.includes("COFFEE") ||
-      i.category?.includes("BEVERAGES") ||
-      i.itemType === "PREPARED_BEVERAGE"
-  );
+// Helper: Create KDS Tickets for Barista / Kitchen Stations (with isolated per-round note!)
+async function createKdsTickets(items: any[], orderId: string, roundNote?: string | null) {
+  const cleanRoundNote = roundNote?.trim() || null;
   const kitchenItems = items.filter(
-    (i: any) => i.category?.includes("WAFFLES") || i.category?.includes("PANCAKES")
-  );
-  const pastryItems = items.filter(
     (i: any) =>
-      i.category?.includes("ORIENTAL") ||
-      i.category?.includes("WESTERN") ||
-      i.category?.includes("CAKES")
+      i.category?.includes("WAFFLES") ||
+      i.category?.includes("PANCAKES") ||
+      i.category?.includes("CROISSANT") ||
+      i.category?.includes("BAKERY") ||
+      i.category?.includes("DESSERT")
+  );
+  const kitchenIds = new Set(kitchenItems.map((x: any) => x.menuItemId || x.nameAr));
+  const baristaItems = items.filter(
+    (i: any) => !kitchenIds.has(i.menuItemId || i.nameAr)
   );
 
   if (baristaItems.length > 0) {
@@ -421,7 +419,7 @@ async function createKdsTickets(items: any[], orderId: string) {
         orderId,
         station: "BARISTA",
         status: "QUEUED",
-        itemsSummary: JSON.stringify(baristaItems),
+        itemsSummary: JSON.stringify({ items: baristaItems, roundNote: cleanRoundNote }),
       },
     });
   }
@@ -431,17 +429,7 @@ async function createKdsTickets(items: any[], orderId: string) {
         orderId,
         station: "KITCHEN",
         status: "QUEUED",
-        itemsSummary: JSON.stringify(kitchenItems),
-      },
-    });
-  }
-  if (pastryItems.length > 0) {
-    await prisma.kdsTicket.create({
-      data: {
-        orderId,
-        station: "PASTRY_COUNTER",
-        status: "QUEUED",
-        itemsSummary: JSON.stringify(pastryItems),
+        itemsSummary: JSON.stringify({ items: kitchenItems, roundNote: cleanRoundNote }),
       },
     });
   }
@@ -579,6 +567,26 @@ export async function POST(req: Request) {
       snapshotItemsWithCost(rawItems),
     ]);
 
+    // Anti-Fake-Order Hall Passcode Enforcement (for QR self-orders when enabled in Admin)
+    if (
+      orderType === "DINE_IN" &&
+      !cashierName &&
+      settings?.hallPasscodeEnabled
+    ) {
+      const providedCode = String(body.hallPasscode || "").trim();
+      const expectedCode = String(settings.hallPasscode || "2026").trim();
+      if (!providedCode || providedCode !== expectedCode) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "كود الصالة اليومي غير صحيح! اسأل الباريستا عن كود الصالة لتأكيد وجودك داخل الكافيه 🛡️",
+            requireHallPasscode: true,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     // 0. Resolve Table if DINE_IN
     let targetTable = null;
     let cleanTableNumber = tableNumber ? String(tableNumber).trim() : null;
@@ -682,8 +690,8 @@ export async function POST(req: Request) {
         // Deplete inventory for new items
         await depleteInventory(items, updatedOrder.orderNumber);
 
-        // Create KDS ticket specifically for the newly added items
-        await createKdsTickets(items, updatedOrder.id);
+        // Create KDS ticket specifically for the newly added items with THIS round's isolated note
+        await createKdsTickets(items, updatedOrder.id, incomingNote);
 
         return NextResponse.json({
           success: true,
@@ -904,7 +912,7 @@ export async function POST(req: Request) {
 
     // 5. Create KDS Tickets strictly for Soulmate Cafe (immediate non-scheduled or ready orders)
     if (targetOutletObj?.code === "SOULMATE_CAFE" && !scheduledFlag) {
-      await createKdsTickets(items, order.id);
+      await createKdsTickets(items, order.id, notes?.trim() || null);
     }
 
     // 6. Real-Time Background Web Push Notification (wakes up mobile/desktop even when closed)

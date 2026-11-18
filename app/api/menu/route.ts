@@ -55,7 +55,14 @@ export async function GET(req: Request) {
       };
     });
 
-    return NextResponse.json({ success: true, items: enrichedItems });
+    return NextResponse.json(
+      { success: true, items: enrichedItems },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

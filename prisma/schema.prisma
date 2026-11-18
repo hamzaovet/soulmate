@@ -504,6 +504,10 @@ model SystemSettings {
   shift2Name              String         @default("الوردية الثانية (المسائية)")
   shift2Pin               String         @default("2222")
 
+  // 🛡️ حماية الصالة ضد الطلبات الوهمية من خارج الكافيه (كود يومي اختياري)
+  hallPasscodeEnabled     Boolean        @default(false)
+  hallPasscode            String         @default("2026")
+
   // 👑 برنامج الولاء والهدايا (يطبق على أبو عادل وسول ميت ديناميكياً)
   isLoyaltyEnabled          Boolean        @default(true)
   pointsPerPoundSpent       Float          @default(1.0) // مثال: 1 نقطة لكل 1 جنيه إنفاق

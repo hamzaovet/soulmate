@@ -183,7 +183,7 @@ export default function StaffLoginPage() {
         <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
           <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>نظام سحابي مشفر وآمن 100%</span>
+            <span>تطوير أوركا (Orca Tech) 🐬 • 01018671000</span>
           </div>
 
           <Link

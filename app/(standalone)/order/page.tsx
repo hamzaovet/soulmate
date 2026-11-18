@@ -108,9 +108,27 @@ function SoulmateHallOrderInner() {
   const [selectedTableNumber, setSelectedTableNumber] = useState<string>(initialTableParam);
   const [showTablePicker, setShowTablePicker] = useState<boolean>(!initialTableParam);
 
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const cached = localStorage.getItem("soulmate_menu_cache_v1");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loadingMenu, setLoadingMenu] = useState<boolean>(true);
   const [settings, setSettings] = useState<any>(null);
   const [outletId, setOutletId] = useState<string>("");
+  const [hallPasscodeInput, setHallPasscodeInput] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return sessionStorage.getItem("soulmate_hall_passcode") || "";
+    } catch {
+      return "";
+    }
+  });
+  const [showPasscodePrompt, setShowPasscodePrompt] = useState<boolean>(false);
 
   const [activeCategory, setActiveCategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -159,6 +177,9 @@ function SoulmateHallOrderInner() {
       if (menuData.success && Array.isArray(menuData.items)) {
         const available = menuData.items.filter((i: MenuItem) => i.isAvailable !== false);
         setMenuItems(available);
+        try {
+          localStorage.setItem("soulmate_menu_cache_v1", JSON.stringify(available));
+        } catch {}
         if (available[0]?.outletId) setOutletId(available[0].outletId);
       }
       if (tablesData.success && Array.isArray(tablesData.tables)) {
@@ -172,6 +193,8 @@ function SoulmateHallOrderInner() {
       }
     } catch (e) {
       console.error("Error loading Soulmate Hall Menu", e);
+    } finally {
+      setLoadingMenu(false);
     }
   }, [outletId]);
 
@@ -219,7 +242,7 @@ function SoulmateHallOrderInner() {
       if (currStatus === "PREPARING") {
         body = "👨‍🍳 الباريستا استلم طلبك وبدأ تحضيره الآن!";
       } else if (currStatus === "READY_TO_SERVE") {
-        body = "✅ طلبك جاهز الآن وفي طريقه لطاولتك!";
+        body = "✅ طلبك جاهز الآن — يمكنك استلامه من الباريستا ☕";
       } else if (currStatus === "COMPLETED") {
         body = "🎉 تم إقفال الشيك بنجاح — شكراً لزيارتك Soulmate!";
       }
@@ -342,6 +365,12 @@ function SoulmateHallOrderInner() {
     }
     if (cart.length === 0) return;
 
+    // If Admin enabled Daily Hall Passcode anti-prank protection, verify guest has code
+    if (settings?.hallPasscodeEnabled && !hallPasscodeInput.trim()) {
+      setShowPasscodePrompt(true);
+      return;
+    }
+
     requestBrowserNotificationPermission();
     setSubmittingOrder(true);
     try {
@@ -353,6 +382,7 @@ function SoulmateHallOrderInner() {
           orderType: "DINE_IN",
           tableId: activeTableObj?.id || undefined,
           tableNumber: selectedTableNumber,
+          hallPasscode: hallPasscodeInput.trim() || undefined,
           items: cart.map((c) => ({
             menuItemId: c.menuItemId,
             nameAr: c.nameAr,
@@ -369,8 +399,17 @@ function SoulmateHallOrderInner() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
+        if (data.requireHallPasscode) {
+          setHallPasscodeInput("");
+          setShowPasscodePrompt(true);
+        }
         showToast(data.error || "حدث خطأ أثناء إرسال الطلب");
         return;
+      }
+      if (hallPasscodeInput.trim()) {
+        try {
+          sessionStorage.setItem("soulmate_hall_passcode", hallPasscodeInput.trim());
+        } catch {}
       }
       setCart([]);
       setBaristaNote("");
@@ -587,7 +626,7 @@ function SoulmateHallOrderInner() {
                   }`}
                 >
                   {activeOrder.status === "READY_TO_SERVE"
-                    ? "✅ جاهز وفي طريقه إليك"
+                    ? "✅ جاهز — يمكنك استلامه من الباريستا"
                     : activeOrder.status === "PREPARING"
                     ? "☕ الباريستا يحضّر طلبك"
                     : "⏳ تم الإرسال — بانتظار الباريستا"}
@@ -768,7 +807,28 @@ function SoulmateHallOrderInner() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-5 pb-28 lg:pb-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Menu Grid (8 cols on desktop) */}
         <section className="lg:col-span-8 space-y-6">
-          {groupedByCategory.length === 0 ? (
+          {loadingMenu && menuItems.length === 0 ? (
+            <div className="space-y-4">
+              <div className="text-center text-xs font-bold text-amber-300/80 py-2">
+                ☕ جاري تجهيز منيو Soulmate...
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {Array.from({ length: 8 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-2xl border border-white/10 bg-[#171210] p-3 flex items-center gap-3 animate-pulse"
+                  >
+                    <div className="w-16 h-16 rounded-xl bg-white/10 shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3.5 bg-white/10 rounded w-3/4" />
+                      <div className="h-2.5 bg-white/5 rounded w-1/2" />
+                      <div className="h-5 bg-amber-500/15 rounded w-1/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : groupedByCategory.length === 0 ? (
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] py-16 text-center text-white/40 font-bold">
               لا توجد أصناف مطابقة للبحث
             </div>
@@ -863,10 +923,59 @@ function SoulmateHallOrderInner() {
         </section>
 
         {/* Desktop Sticky Side Panel: Cart + Open Check (4 cols) */}
-        <aside className="hidden lg:block lg:col-span-4 sticky top-32 rounded-3xl border border-amber-500/25 bg-[#161210] shadow-2xl overflow-hidden">
+        <aside className="hidden lg:block lg:col-span-4 sticky top-32 max-h-[calc(100vh-8.5rem)] overflow-y-auto rounded-3xl border border-amber-500/25 bg-[#161210] shadow-2xl">
           {renderCartAndCheckContent()}
         </aside>
       </main>
+
+      {/* Orca Tech Developer Footer */}
+      <footer className="pb-24 lg:pb-6 pt-3 text-center text-[11px] text-amber-200/45 border-t border-white/5">
+        تطوير <strong className="text-amber-300/80">شركة أوركا للحلول البرمجية (Orca Tech) 🐬</strong> •{" "}
+        <a href="tel:01018671000" className="font-mono hover:text-amber-300">
+          01018671000
+        </a>
+      </footer>
+
+      {/* Optional Hall Passcode Prompt Modal (Anti-Prank Protection when enabled by Admin) */}
+      {showPasscodePrompt && (
+        <div className="fixed inset-0 z-[95] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-[#161210] border border-amber-500/40 p-6 space-y-4 text-center shadow-2xl">
+            <h3 className="text-base font-black text-amber-200">🛡️ كود تأكيد التواجد بالصالة</h3>
+            <p className="text-xs text-amber-100/70">
+              يرجى إدخال كود الصالة اليومي الموجود على الكاونتر أو لدى الباريستا لتأكيد الطلب
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoFocus
+              value={hallPasscodeInput}
+              onChange={(e) => setHallPasscodeInput(e.target.value)}
+              placeholder="مثال: 2026"
+              className="w-full text-center tracking-[0.4em] text-2xl font-black py-3 rounded-2xl bg-black/60 border border-amber-500/40 text-amber-200 focus:outline-none focus:border-amber-400 font-mono"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPasscodePrompt(false)}
+                className="flex-1 py-2.5 rounded-xl bg-white/10 text-xs font-bold text-white/80"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!hallPasscodeInput.trim()) return;
+                  setShowPasscodePrompt(false);
+                  handleSendOrder();
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 text-black text-xs font-black"
+              >
+                تأكيد وإرسال الطلب ☕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Bottom Floating Bar (Cart + Open Check Quick Access) */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-3 bg-gradient-to-t from-[#0e0b0a] via-[#0e0b0a]/95 to-transparent">

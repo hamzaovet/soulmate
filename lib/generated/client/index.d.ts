@@ -29590,6 +29590,8 @@ export namespace Prisma {
     shift1Pin: string | null
     shift2Name: string | null
     shift2Pin: string | null
+    hallPasscodeEnabled: boolean | null
+    hallPasscode: string | null
     isLoyaltyEnabled: boolean | null
     pointsPerPoundSpent: number | null
     poundValuePerPoint: number | null
@@ -29639,6 +29641,8 @@ export namespace Prisma {
     shift1Pin: string | null
     shift2Name: string | null
     shift2Pin: string | null
+    hallPasscodeEnabled: boolean | null
+    hallPasscode: string | null
     isLoyaltyEnabled: boolean | null
     pointsPerPoundSpent: number | null
     poundValuePerPoint: number | null
@@ -29688,6 +29692,8 @@ export namespace Prisma {
     shift1Pin: number
     shift2Name: number
     shift2Pin: number
+    hallPasscodeEnabled: number
+    hallPasscode: number
     isLoyaltyEnabled: number
     pointsPerPoundSpent: number
     poundValuePerPoint: number
@@ -29767,6 +29773,8 @@ export namespace Prisma {
     shift1Pin?: true
     shift2Name?: true
     shift2Pin?: true
+    hallPasscodeEnabled?: true
+    hallPasscode?: true
     isLoyaltyEnabled?: true
     pointsPerPoundSpent?: true
     poundValuePerPoint?: true
@@ -29816,6 +29824,8 @@ export namespace Prisma {
     shift1Pin?: true
     shift2Name?: true
     shift2Pin?: true
+    hallPasscodeEnabled?: true
+    hallPasscode?: true
     isLoyaltyEnabled?: true
     pointsPerPoundSpent?: true
     poundValuePerPoint?: true
@@ -29865,6 +29875,8 @@ export namespace Prisma {
     shift1Pin?: true
     shift2Name?: true
     shift2Pin?: true
+    hallPasscodeEnabled?: true
+    hallPasscode?: true
     isLoyaltyEnabled?: true
     pointsPerPoundSpent?: true
     poundValuePerPoint?: true
@@ -30001,6 +30013,8 @@ export namespace Prisma {
     shift1Pin: string
     shift2Name: string
     shift2Pin: string
+    hallPasscodeEnabled: boolean
+    hallPasscode: string
     isLoyaltyEnabled: boolean
     pointsPerPoundSpent: number
     poundValuePerPoint: number
@@ -30069,6 +30083,8 @@ export namespace Prisma {
     shift1Pin?: boolean
     shift2Name?: boolean
     shift2Pin?: boolean
+    hallPasscodeEnabled?: boolean
+    hallPasscode?: boolean
     isLoyaltyEnabled?: boolean
     pointsPerPoundSpent?: boolean
     poundValuePerPoint?: boolean
@@ -30118,6 +30134,8 @@ export namespace Prisma {
     shift1Pin?: boolean
     shift2Name?: boolean
     shift2Pin?: boolean
+    hallPasscodeEnabled?: boolean
+    hallPasscode?: boolean
     isLoyaltyEnabled?: boolean
     pointsPerPoundSpent?: boolean
     poundValuePerPoint?: boolean
@@ -30167,6 +30185,8 @@ export namespace Prisma {
     shift1Pin?: boolean
     shift2Name?: boolean
     shift2Pin?: boolean
+    hallPasscodeEnabled?: boolean
+    hallPasscode?: boolean
     isLoyaltyEnabled?: boolean
     pointsPerPoundSpent?: boolean
     poundValuePerPoint?: boolean
@@ -30216,6 +30236,8 @@ export namespace Prisma {
     shift1Pin?: boolean
     shift2Name?: boolean
     shift2Pin?: boolean
+    hallPasscodeEnabled?: boolean
+    hallPasscode?: boolean
     isLoyaltyEnabled?: boolean
     pointsPerPoundSpent?: boolean
     poundValuePerPoint?: boolean
@@ -30242,7 +30264,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type SystemSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "brandNameAr" | "brandNameEn" | "cafeAddress" | "soulmatePhone" | "abuAdelPhone" | "hotline" | "whatsapp" | "haliyomakUrl" | "facebookUrl" | "serviceChargePercent" | "taxPercent" | "deliveryFee" | "preOrderDepositPercent" | "instapayAccount" | "vodafoneCashNumber" | "isServiceChargeEnabled" | "isTaxEnabled" | "shift1Name" | "shift1Pin" | "shift2Name" | "shift2Pin" | "isLoyaltyEnabled" | "pointsPerPoundSpent" | "poundValuePerPoint" | "loyaltyRewardThreshold" | "loyaltyRewardValue" | "loyaltyAppliesToAbuAdel" | "loyaltyAppliesToSoulmate" | "loyaltyMotivationalMsg" | "offersEnabled" | "specialOffers" | "dailyReportAlertEnabled" | "dailyReportAlertTime" | "dailyReportRepeatSeconds" | "dailyReportAlertSound" | "internalSupplyMarkupEnabled" | "internalSupplyMarkupPercent" | "talabatCommissionPercent" | "geminiApiKey" | "receiptFooterNotes" | "systemLocked" | "lockMessage" | "vapidPublicKey" | "vapidPrivateKey" | "updatedAt", ExtArgs["result"]["systemSettings"]>
+  export type SystemSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "brandNameAr" | "brandNameEn" | "cafeAddress" | "soulmatePhone" | "abuAdelPhone" | "hotline" | "whatsapp" | "haliyomakUrl" | "facebookUrl" | "serviceChargePercent" | "taxPercent" | "deliveryFee" | "preOrderDepositPercent" | "instapayAccount" | "vodafoneCashNumber" | "isServiceChargeEnabled" | "isTaxEnabled" | "shift1Name" | "shift1Pin" | "shift2Name" | "shift2Pin" | "hallPasscodeEnabled" | "hallPasscode" | "isLoyaltyEnabled" | "pointsPerPoundSpent" | "poundValuePerPoint" | "loyaltyRewardThreshold" | "loyaltyRewardValue" | "loyaltyAppliesToAbuAdel" | "loyaltyAppliesToSoulmate" | "loyaltyMotivationalMsg" | "offersEnabled" | "specialOffers" | "dailyReportAlertEnabled" | "dailyReportAlertTime" | "dailyReportRepeatSeconds" | "dailyReportAlertSound" | "internalSupplyMarkupEnabled" | "internalSupplyMarkupPercent" | "talabatCommissionPercent" | "geminiApiKey" | "receiptFooterNotes" | "systemLocked" | "lockMessage" | "vapidPublicKey" | "vapidPrivateKey" | "updatedAt", ExtArgs["result"]["systemSettings"]>
 
   export type $SystemSettingsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "SystemSettings"
@@ -30270,6 +30292,8 @@ export namespace Prisma {
       shift1Pin: string
       shift2Name: string
       shift2Pin: string
+      hallPasscodeEnabled: boolean
+      hallPasscode: string
       isLoyaltyEnabled: boolean
       pointsPerPoundSpent: number
       poundValuePerPoint: number
@@ -30739,6 +30763,8 @@ export namespace Prisma {
     readonly shift1Pin: FieldRef<"SystemSettings", 'String'>
     readonly shift2Name: FieldRef<"SystemSettings", 'String'>
     readonly shift2Pin: FieldRef<"SystemSettings", 'String'>
+    readonly hallPasscodeEnabled: FieldRef<"SystemSettings", 'Boolean'>
+    readonly hallPasscode: FieldRef<"SystemSettings", 'String'>
     readonly isLoyaltyEnabled: FieldRef<"SystemSettings", 'Boolean'>
     readonly pointsPerPoundSpent: FieldRef<"SystemSettings", 'Float'>
     readonly poundValuePerPoint: FieldRef<"SystemSettings", 'Float'>
@@ -43563,6 +43589,8 @@ export namespace Prisma {
     shift1Pin: 'shift1Pin',
     shift2Name: 'shift2Name',
     shift2Pin: 'shift2Pin',
+    hallPasscodeEnabled: 'hallPasscodeEnabled',
+    hallPasscode: 'hallPasscode',
     isLoyaltyEnabled: 'isLoyaltyEnabled',
     pointsPerPoundSpent: 'pointsPerPoundSpent',
     poundValuePerPoint: 'poundValuePerPoint',
@@ -46065,6 +46093,8 @@ export namespace Prisma {
     shift1Pin?: StringFilter<"SystemSettings"> | string
     shift2Name?: StringFilter<"SystemSettings"> | string
     shift2Pin?: StringFilter<"SystemSettings"> | string
+    hallPasscodeEnabled?: BoolFilter<"SystemSettings"> | boolean
+    hallPasscode?: StringFilter<"SystemSettings"> | string
     isLoyaltyEnabled?: BoolFilter<"SystemSettings"> | boolean
     pointsPerPoundSpent?: FloatFilter<"SystemSettings"> | number
     poundValuePerPoint?: FloatFilter<"SystemSettings"> | number
@@ -46114,6 +46144,8 @@ export namespace Prisma {
     shift1Pin?: SortOrder
     shift2Name?: SortOrder
     shift2Pin?: SortOrder
+    hallPasscodeEnabled?: SortOrder
+    hallPasscode?: SortOrder
     isLoyaltyEnabled?: SortOrder
     pointsPerPoundSpent?: SortOrder
     poundValuePerPoint?: SortOrder
@@ -46166,6 +46198,8 @@ export namespace Prisma {
     shift1Pin?: StringFilter<"SystemSettings"> | string
     shift2Name?: StringFilter<"SystemSettings"> | string
     shift2Pin?: StringFilter<"SystemSettings"> | string
+    hallPasscodeEnabled?: BoolFilter<"SystemSettings"> | boolean
+    hallPasscode?: StringFilter<"SystemSettings"> | string
     isLoyaltyEnabled?: BoolFilter<"SystemSettings"> | boolean
     pointsPerPoundSpent?: FloatFilter<"SystemSettings"> | number
     poundValuePerPoint?: FloatFilter<"SystemSettings"> | number
@@ -46215,6 +46249,8 @@ export namespace Prisma {
     shift1Pin?: SortOrder
     shift2Name?: SortOrder
     shift2Pin?: SortOrder
+    hallPasscodeEnabled?: SortOrder
+    hallPasscode?: SortOrder
     isLoyaltyEnabled?: SortOrder
     pointsPerPoundSpent?: SortOrder
     poundValuePerPoint?: SortOrder
@@ -46272,6 +46308,8 @@ export namespace Prisma {
     shift1Pin?: StringWithAggregatesFilter<"SystemSettings"> | string
     shift2Name?: StringWithAggregatesFilter<"SystemSettings"> | string
     shift2Pin?: StringWithAggregatesFilter<"SystemSettings"> | string
+    hallPasscodeEnabled?: BoolWithAggregatesFilter<"SystemSettings"> | boolean
+    hallPasscode?: StringWithAggregatesFilter<"SystemSettings"> | string
     isLoyaltyEnabled?: BoolWithAggregatesFilter<"SystemSettings"> | boolean
     pointsPerPoundSpent?: FloatWithAggregatesFilter<"SystemSettings"> | number
     poundValuePerPoint?: FloatWithAggregatesFilter<"SystemSettings"> | number
@@ -49860,6 +49898,8 @@ export namespace Prisma {
     shift1Pin?: string
     shift2Name?: string
     shift2Pin?: string
+    hallPasscodeEnabled?: boolean
+    hallPasscode?: string
     isLoyaltyEnabled?: boolean
     pointsPerPoundSpent?: number
     poundValuePerPoint?: number
@@ -49909,6 +49949,8 @@ export namespace Prisma {
     shift1Pin?: string
     shift2Name?: string
     shift2Pin?: string
+    hallPasscodeEnabled?: boolean
+    hallPasscode?: string
     isLoyaltyEnabled?: boolean
     pointsPerPoundSpent?: number
     poundValuePerPoint?: number
@@ -49958,6 +50000,8 @@ export namespace Prisma {
     shift1Pin?: StringFieldUpdateOperationsInput | string
     shift2Name?: StringFieldUpdateOperationsInput | string
     shift2Pin?: StringFieldUpdateOperationsInput | string
+    hallPasscodeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    hallPasscode?: StringFieldUpdateOperationsInput | string
     isLoyaltyEnabled?: BoolFieldUpdateOperationsInput | boolean
     pointsPerPoundSpent?: FloatFieldUpdateOperationsInput | number
     poundValuePerPoint?: FloatFieldUpdateOperationsInput | number
@@ -50007,6 +50051,8 @@ export namespace Prisma {
     shift1Pin?: StringFieldUpdateOperationsInput | string
     shift2Name?: StringFieldUpdateOperationsInput | string
     shift2Pin?: StringFieldUpdateOperationsInput | string
+    hallPasscodeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    hallPasscode?: StringFieldUpdateOperationsInput | string
     isLoyaltyEnabled?: BoolFieldUpdateOperationsInput | boolean
     pointsPerPoundSpent?: FloatFieldUpdateOperationsInput | number
     poundValuePerPoint?: FloatFieldUpdateOperationsInput | number
@@ -50056,6 +50102,8 @@ export namespace Prisma {
     shift1Pin?: string
     shift2Name?: string
     shift2Pin?: string
+    hallPasscodeEnabled?: boolean
+    hallPasscode?: string
     isLoyaltyEnabled?: boolean
     pointsPerPoundSpent?: number
     poundValuePerPoint?: number
@@ -50105,6 +50153,8 @@ export namespace Prisma {
     shift1Pin?: StringFieldUpdateOperationsInput | string
     shift2Name?: StringFieldUpdateOperationsInput | string
     shift2Pin?: StringFieldUpdateOperationsInput | string
+    hallPasscodeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    hallPasscode?: StringFieldUpdateOperationsInput | string
     isLoyaltyEnabled?: BoolFieldUpdateOperationsInput | boolean
     pointsPerPoundSpent?: FloatFieldUpdateOperationsInput | number
     poundValuePerPoint?: FloatFieldUpdateOperationsInput | number
@@ -50154,6 +50204,8 @@ export namespace Prisma {
     shift1Pin?: StringFieldUpdateOperationsInput | string
     shift2Name?: StringFieldUpdateOperationsInput | string
     shift2Pin?: StringFieldUpdateOperationsInput | string
+    hallPasscodeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    hallPasscode?: StringFieldUpdateOperationsInput | string
     isLoyaltyEnabled?: BoolFieldUpdateOperationsInput | boolean
     pointsPerPoundSpent?: FloatFieldUpdateOperationsInput | number
     poundValuePerPoint?: FloatFieldUpdateOperationsInput | number
@@ -53225,6 +53277,8 @@ export namespace Prisma {
     shift1Pin?: SortOrder
     shift2Name?: SortOrder
     shift2Pin?: SortOrder
+    hallPasscodeEnabled?: SortOrder
+    hallPasscode?: SortOrder
     isLoyaltyEnabled?: SortOrder
     pointsPerPoundSpent?: SortOrder
     poundValuePerPoint?: SortOrder
@@ -53288,6 +53342,8 @@ export namespace Prisma {
     shift1Pin?: SortOrder
     shift2Name?: SortOrder
     shift2Pin?: SortOrder
+    hallPasscodeEnabled?: SortOrder
+    hallPasscode?: SortOrder
     isLoyaltyEnabled?: SortOrder
     pointsPerPoundSpent?: SortOrder
     poundValuePerPoint?: SortOrder
@@ -53337,6 +53393,8 @@ export namespace Prisma {
     shift1Pin?: SortOrder
     shift2Name?: SortOrder
     shift2Pin?: SortOrder
+    hallPasscodeEnabled?: SortOrder
+    hallPasscode?: SortOrder
     isLoyaltyEnabled?: SortOrder
     pointsPerPoundSpent?: SortOrder
     poundValuePerPoint?: SortOrder

@@ -205,14 +205,6 @@ export default function KdsScreenPage() {
             >
               المطبخ والوافل 🥞
             </button>
-            <button
-              onClick={() => setStationFilter("PASTRY_COUNTER")}
-              className={`py-1 px-3 rounded-lg transition ${
-                stationFilter === "PASTRY_COUNTER" ? "bg-rose-500 text-white font-black" : "text-slate-400 hover:text-white"
-              }`}
-            >
-              حلواني أبو عادل 🍰
-            </button>
           </div>
 
           {/* Sound Toggle */}
@@ -413,9 +405,9 @@ export default function KdsScreenPage() {
                       </div>
                     ))}
 
-                    {t.order?.notes && (
+                    {t.roundNote && (
                       <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-200">
-                        <strong>ملاحظات العميل:</strong> {t.order.notes}
+                        <strong>ملاحظة هذا الطلب:</strong> {t.roundNote}
                       </div>
                     )}
                   </div>
@@ -438,13 +430,26 @@ export default function KdsScreenPage() {
                     )}
 
                     {t.status === "QUEUED" ? (
-                      <button
-                        onClick={() => handleUpdateStatus(t.id, "IN_PREPARATION")}
-                        className="flex-1 py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-black text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <Flame className="w-3.5 h-3.5" />
-                        <span>بدء التحضير ⏳</span>
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleUpdateStatus(t.id, "IN_PREPARATION")}
+                          className="flex-1 py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-black text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Flame className="w-3.5 h-3.5" />
+                          <span>بدء التحضير ⏳</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm("هل تريد إلغاء هذا الطلب (طلب وهمي / خاطئ)؟")) {
+                              handleUpdateStatus(t.id, "CANCELLED");
+                            }
+                          }}
+                          className="py-2 px-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/35 font-black text-xs transition cursor-pointer shrink-0"
+                          title="إلغاء طلب وهمي أو خاطئ"
+                        >
+                          إلغاء ✕
+                        </button>
+                      </>
                     ) : (
                       <button
                         onClick={() => handleUpdateStatus(t.id, "DONE")}
@@ -531,6 +536,11 @@ export default function KdsScreenPage() {
           </div>
         </div>
       )}
+      {/* Orca Tech Footer */}
+      <footer className="shrink-0 py-1.5 text-center text-[10px] text-slate-500 border-t border-white/5 no-print">
+        تطوير <strong className="text-amber-400/90">شركة أوركا للحلول البرمجية (Orca Tech) 🐬</strong> •{" "}
+        <span className="font-mono">01018671000</span>
+      </footer>
     </div>
   );
 }

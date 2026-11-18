@@ -38,6 +38,8 @@ export async function PATCH(req: Request) {
         ...(body.shift1Pin !== undefined && { shift1Pin: String(body.shift1Pin).trim() }),
         ...(body.shift2Name !== undefined && { shift2Name: body.shift2Name }),
         ...(body.shift2Pin !== undefined && { shift2Pin: String(body.shift2Pin).trim() }),
+        ...(body.hallPasscodeEnabled !== undefined && { hallPasscodeEnabled: Boolean(body.hallPasscodeEnabled) }),
+        ...(body.hallPasscode !== undefined && { hallPasscode: String(body.hallPasscode).trim() || "2026" }),
         ...(body.abuAdelPhone !== undefined && { abuAdelPhone: body.abuAdelPhone }),
         ...(body.hotline !== undefined && { hotline: body.hotline }),
         ...(body.whatsapp !== undefined && { whatsapp: body.whatsapp }),
