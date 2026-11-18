@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
  * exact live deployed Soulmate URL (no hardcoded old domain!).
  */
 export async function GET(req: NextRequest) {
-  const origin = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
+  const origin = req.nextUrl.origin || process.env.NEXT_PUBLIC_APP_URL || "https://soulmate-navy.vercel.app";
   const cleanOrigin = origin.replace(/\/+$/, "");
 
   const psScript = `

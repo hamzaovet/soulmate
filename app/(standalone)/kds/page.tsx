@@ -6,6 +6,11 @@ import Link from "next/link";
 import { PushOptInButton } from "@/components/PwaBootAndPushButton";
 import { ThemeToggle } from "@/components/ThemeProviderAndToggle";
 import {
+  registerAudioUnlockListeners,
+  playStaffUrgentRing,
+  unlockAlertAudio,
+} from "@/lib/alertSound";
+import {
   Coffee,
   Flame,
   Cake,
@@ -47,8 +52,13 @@ export default function KdsScreenPage() {
     }
   });
 
-  // Audio Context Ref
+  // Audio Context Ref & Unresponded Repeating Alarm
   const lastTicketIdRef = useRef<string | null>(null);
+  const [silencedTicketIds, setSilencedTicketIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    return registerAudioUnlockListeners();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("abuadel_soulmate_user");
@@ -56,28 +66,18 @@ export default function KdsScreenPage() {
     router.push("/login");
   };
 
-  const playChime = () => {
-    if (!soundEnabled) return;
-    try {
-      const audio = new Audio("/notification.mp3");
-      audio.play().catch(() => {});
-    } catch {}
-  };
-
   const fetchKdsTickets = async () => {
     try {
-      const res = await fetch(`/api/kds?station=${stationFilter}`);
+      const res = await fetch(`/api/kds?station=${stationFilter}`, { cache: "no-store" });
       const data = await res.json();
       if (data.success && data.tickets) {
         setTickets(data.tickets);
 
-        // Check if new ticket arrived
-        if (data.tickets.length > 0) {
-          const newest = data.tickets[0];
-          if (newest.id !== lastTicketIdRef.current) {
-            lastTicketIdRef.current = newest.id;
-            playChime();
-          }
+        // Ring immediately when a new queued ticket arrives
+        const queued = data.tickets.filter((t: any) => t.status === "QUEUED");
+        if (queued.length > 0 && queued[0].id !== lastTicketIdRef.current) {
+          lastTicketIdRef.current = queued[0].id;
+          if (soundEnabled) playStaffUrgentRing();
         }
       }
     } catch (e) {
@@ -89,9 +89,24 @@ export default function KdsScreenPage() {
 
   useEffect(() => {
     fetchKdsTickets();
-    const interval = setInterval(fetchKdsTickets, 3500);
+    // Ultra-fast 2.5-second live polling for KDS barista station
+    const interval = setInterval(fetchKdsTickets, 2500);
     return () => clearInterval(interval);
   }, [stationFilter, soundEnabled]);
+
+  // Repeating loud embedded bell every 2.8 seconds until barista responds to QUEUED tickets!
+  const unrespondedQueuedTickets = tickets.filter(
+    (t) => t.status === "QUEUED" && !silencedTicketIds.includes(t.id)
+  );
+  const hasUnrespondedQueued = unrespondedQueuedTickets.length > 0;
+
+  useEffect(() => {
+    if (!soundEnabled || !hasUnrespondedQueued) return;
+    const ringTimer = setInterval(() => {
+      playStaffUrgentRing();
+    }, 2800);
+    return () => clearInterval(ringTimer);
+  }, [soundEnabled, hasUnrespondedQueued]);
 
   const handleUpdateStatus = async (ticketId: string, status: string) => {
     try {
@@ -118,6 +133,29 @@ export default function KdsScreenPage() {
   return (
     <div className="min-h-screen lg:h-screen lg:max-h-screen lg:overflow-hidden bg-[#07070b] text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black" dir="rtl">
       {/* KDS TOP HEADER */}
+      {hasUnrespondedQueued && (
+        <div className="bg-gradient-to-l from-rose-600 via-amber-500 to-rose-600 text-black px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 animate-pulse shadow-lg">
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-black">
+            <BellRing className="w-5 h-5" />
+            <span>
+              🔔 يوجد {unrespondedQueuedTickets.length} طلب جديد بانتظار بدء التحضير — الجرس مستمر حتى يتم الرد!
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              unlockAlertAudio();
+              setSilencedTicketIds((prev) => [
+                ...prev,
+                ...unrespondedQueuedTickets.map((t) => t.id),
+              ]);
+            }}
+            className="px-3 py-1 rounded-xl bg-black text-amber-300 text-xs font-black hover:bg-slate-900 transition cursor-pointer"
+          >
+            تم الاطلاع / إيقاف الجرس ✓
+          </button>
+        </div>
+      )}
       <header className="shrink-0 z-40 bg-[#120d14]/95 backdrop-blur-md border-b border-amber-500/25 px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 shadow-lg">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div data-force-dark="true" className="w-10 h-10 rounded-2xl overflow-hidden border-2 border-amber-400 bg-black shrink-0 p-1">

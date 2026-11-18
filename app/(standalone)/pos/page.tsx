@@ -17,6 +17,12 @@ import ShiftGateModal, {
 import DailyOrdersAndReportsModal from "@/components/DailyOrdersAndReportsModal";
 import { printThermalHtml, generateSoulmateReceiptHtml } from "@/lib/print";
 import {
+  registerAudioUnlockListeners,
+  playStaffUrgentRing,
+  playBillRequestRing,
+  unlockAlertAudio,
+} from "@/lib/alertSound";
+import {
   SOULMATE_CATEGORIES,
   ABU_ADEL_CATEGORIES,
   getCategoryLabel,
@@ -151,6 +157,12 @@ export default function PosTerminalPage() {
   const [shiftGateCanClose, setShiftGateCanClose] = useState<boolean>(false);
   const [showDailyReportsModal, setShowDailyReportsModal] = useState<boolean>(false);
   const [dailyReportsDefaultTab, setDailyReportsDefaultTab] = useState<"ORDERS" | "REPORTS">("ORDERS");
+  const [acknowledgedAlertKeys, setAcknowledgedAlertKeys] = useState<string[]>([]);
+  const [alarmMuted, setAlarmMuted] = useState<boolean>(false);
+
+  useEffect(() => {
+    return registerAudioUnlockListeners();
+  }, []);
 
   useEffect(() => {
     const stored = getStoredShift();
@@ -347,28 +359,42 @@ export default function PosTerminalPage() {
     }
   }, [router]);
 
-  // Subtle Audio Alert for incoming online / delivery orders
+  // Loud Embedded Audio Alert for ALL incoming Hall / Delivery / Takeaway / Bill Request alerts
   const playIncomingOrderChime = () => {
-    if (typeof window === "undefined") return;
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const now = ctx.currentTime;
-      [660, 880].forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(freq, now + idx * 0.14);
-        gain.gain.setValueAtTime(0.08, now + idx * 0.14);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.14 + 0.28);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + idx * 0.14);
-        osc.stop(now + idx * 0.14 + 0.3);
-      });
-    } catch {}
+    if (alarmMuted) return;
+    playStaffUrgentRing();
   };
+
+  // Compute all active unresponded urgent events (New Hall/Delivery/Takeaway orders + Table Bill Requests)
+  const unrespondedNewOrders = posOrders.filter(
+    (o: any) =>
+      o.status === "NEW_PENDING" &&
+      !acknowledgedAlertKeys.includes(`ORD_${o.id}`)
+  );
+  const unrespondedBillTables = tables.filter(
+    (t: any) =>
+      t.status === "BILL_REQUESTED" &&
+      !acknowledgedAlertKeys.includes(`BILL_${t.id}_${t.activeOrderId || ""}`)
+  );
+  const totalUrgentAlerts = unrespondedNewOrders.length + unrespondedBillTables.length;
+
+  // Repeat loud embedded café bell every 2.8 seconds until cashier responds!
+  useEffect(() => {
+    if (alarmMuted || totalUrgentAlerts === 0) return;
+    if (unrespondedBillTables.length > 0) {
+      playBillRequestRing();
+    } else {
+      playStaffUrgentRing();
+    }
+    const timer = setInterval(() => {
+      if (unrespondedBillTables.length > 0) {
+        playBillRequestRing();
+      } else {
+        playStaffUrgentRing();
+      }
+    }, 2800);
+    return () => clearInterval(timer);
+  }, [alarmMuted, totalUrgentAlerts, unrespondedBillTables.length]);
 
   // Load All POS Data
   const loadPosData = async () => {
@@ -387,13 +413,13 @@ export default function PosTerminalPage() {
       const [resOutlets, resTables, resMenu, resSettings, resShifts, resZones, resOrders, resChat, resDrivers, resOffers] =
         await Promise.all([
           fetch("/api/outlets"),
-          fetch("/api/tables"),
+          fetch("/api/tables", { cache: "no-store" }),
           fetch(menuQuery),
           fetch("/api/settings"),
-          fetch(`/api/shifts?outletId=${effectiveOutletId || "ALL"}`),
+          fetch(`/api/shifts?outletId=${effectiveOutletId || "ALL"}`, { cache: "no-store" }),
           fetch("/api/delivery-zones"),
-          fetch(ordersQuery),
-          fetch(chatQuery),
+          fetch(ordersQuery, { cache: "no-store" }),
+          fetch(chatQuery, { cache: "no-store" }),
           fetch("/api/drivers?onlyActive=true"),
           fetch("/api/public/offers", { cache: "no-store" }),
         ]);
@@ -454,14 +480,14 @@ export default function PosTerminalPage() {
       }
       if (dataOrders?.success && Array.isArray(dataOrders.orders)) {
         setPosOrders(dataOrders.orders);
-        const pendingOnline = dataOrders.orders.filter(
-          (o: any) => o.status === "NEW_PENDING" && o.orderType !== "DINE_IN"
+        const pendingAll = dataOrders.orders.filter(
+          (o: any) => o.status === "NEW_PENDING"
         ).length;
-        if (lastPendingCountRef.current > 0 && pendingOnline > lastPendingCountRef.current) {
+        if (pendingAll > lastPendingCountRef.current) {
           playIncomingOrderChime();
-          showToast("info", "🔔 وصلك طلب أونلاين / دليفري جديد الآن!");
+          showToast("info", "🔔 وصلك طلب جديد الآن (صالة / دليفري)!");
         }
-        lastPendingCountRef.current = pendingOnline;
+        lastPendingCountRef.current = pendingAll;
       }
       if (dataChat?.success && Array.isArray(dataChat.messages)) {
         setPosChatMessages(dataChat.messages);
@@ -476,7 +502,8 @@ export default function PosTerminalPage() {
   useEffect(() => {
     if (currentUser) {
       loadPosData();
-      const interval = setInterval(loadPosData, 4000);
+      // Fast 3-second real-time auto-refresh for POS tables, hall QR orders & delivery queue
+      const interval = setInterval(loadPosData, 3000);
       return () => clearInterval(interval);
     }
   }, [currentUser, activeOutletId]);
@@ -1141,6 +1168,86 @@ export default function PosTerminalPage() {
 
   return (
     <div className="min-h-screen lg:h-screen lg:max-h-screen lg:overflow-hidden bg-[#07070a] text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black" dir="rtl">
+      {/* ─────────────────────────────────────────────────────────────
+          0. URGENT REPEATING ALARM BANNER (HALL ORDERS / BILL REQUESTS / DELIVERY)
+         ───────────────────────────────────────────────────────────── */}
+      {totalUrgentAlerts > 0 && (
+        <div className="shrink-0 z-50 bg-gradient-to-l from-rose-600 via-amber-500 to-rose-600 text-black px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shadow-xl no-print animate-pulse">
+          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-black">
+            <span>🔔 تنبيه عاجل ({totalUrgentAlerts}):</span>
+            {unrespondedBillTables.map((t: any) => (
+              <button
+                key={`b-${t.id}`}
+                type="button"
+                onClick={() => {
+                  unlockAlertAudio();
+                  setAcknowledgedAlertKeys((prev) => [
+                    ...prev,
+                    `BILL_${t.id}_${t.activeOrderId || ""}`,
+                  ]);
+                  handleSelectTable(t);
+                }}
+                className="px-2.5 py-1 rounded-xl bg-purple-950 text-purple-100 hover:bg-purple-900 text-xs font-black cursor-pointer"
+              >
+                🧾 طلب حساب طاولة {t.tableNumber}{" "}
+                {t.activeOrder?.billPaymentMethod === "INSTAPAY"
+                  ? "(إنستاباي ⚡)"
+                  : t.activeOrder?.billPaymentMethod === "VODAFONE_CASH"
+                  ? "(محفظة 📱)"
+                  : "(كاش 💵)"}
+              </button>
+            ))}
+            {unrespondedNewOrders.slice(0, 4).map((o: any) => (
+              <button
+                key={`o-${o.id}`}
+                type="button"
+                onClick={() => {
+                  unlockAlertAudio();
+                  setAcknowledgedAlertKeys((prev) => [...prev, `ORD_${o.id}`]);
+                  if (o.orderType === "DINE_IN" && o.tableId) {
+                    const tbl = tables.find((x: any) => x.id === o.tableId);
+                    if (tbl) handleSelectTable(tbl);
+                  } else {
+                    setShowOnlineQueueModal(true);
+                  }
+                }}
+                className="px-2.5 py-1 rounded-xl bg-black text-amber-300 hover:bg-slate-900 text-xs font-black cursor-pointer"
+              >
+                {o.orderType === "DINE_IN"
+                  ? `☕ طلب صالة جديد — طاولة ${o.tableNumber || "?"}`
+                  : o.orderType === "DELIVERY"
+                  ? `🛵 طلب دليفري جديد #${o.dailyTicketNo || o.orderNumber}`
+                  : `🛍️ تيك أواي جديد #${o.dailyTicketNo || o.orderNumber}`}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                unlockAlertAudio();
+                setAcknowledgedAlertKeys((prev) => [
+                  ...prev,
+                  ...unrespondedNewOrders.map((o: any) => `ORD_${o.id}`),
+                  ...unrespondedBillTables.map((t: any) => `BILL_${t.id}_${t.activeOrderId || ""}`),
+                ]);
+              }}
+              className="px-3 py-1 rounded-xl bg-black text-emerald-300 hover:bg-slate-900 text-xs font-black cursor-pointer"
+            >
+              تم الرد / إيقاف الجرس ✓
+            </button>
+            <button
+              type="button"
+              onClick={() => setAlarmMuted((m) => !m)}
+              className="px-2.5 py-1 rounded-xl bg-black/25 hover:bg-black/40 text-black text-xs font-black cursor-pointer"
+            >
+              {alarmMuted ? "🔇 مكتوم" : "🔊 شغال"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ─────────────────────────────────────────────────────────────
           1. POS TOP HEADER
          ───────────────────────────────────────────────────────────── */}

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useEffect, useState, useMemo, useCallback, useRef, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Coffee,
   ShoppingBag,
@@ -22,8 +22,15 @@ import {
   StickyNote,
   UtensilsCrossed,
   ChevronUp,
+  Bell,
 } from "lucide-react";
 import { getCategoryLabel } from "@/lib/categories";
+import {
+  registerAudioUnlockListeners,
+  playCustomerUpdateChime,
+  requestBrowserNotificationPermission,
+  showBrowserNotification,
+} from "@/lib/alertSound";
 
 interface MenuItem {
   id: string;
@@ -83,7 +90,19 @@ function normalizeEgyptWa(phone?: string | null): string {
 
 function SoulmateHallOrderInner() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialTableParam = searchParams.get("table") || "";
+  const modeParam = searchParams.get("mode") || "";
+
+  useEffect(() => {
+    if (modeParam === "delivery" || modeParam === "takeaway") {
+      router.replace("/delivery");
+    }
+  }, [modeParam, router]);
+
+  useEffect(() => {
+    return registerAudioUnlockListeners();
+  }, []);
 
   const [tables, setTables] = useState<DiningTable[]>([]);
   const [selectedTableNumber, setSelectedTableNumber] = useState<string>(initialTableParam);
@@ -100,6 +119,11 @@ function SoulmateHallOrderInner() {
   const [baristaNote, setBaristaNote] = useState<string>("");
   const [submittingOrder, setSubmittingOrder] = useState<boolean>(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [liveNotif, setLiveNotif] = useState<{ title: string; body: string } | null>(null);
+  const prevOrderStateRef = useRef<{ id: string | null; status: string | null }>({
+    id: null,
+    status: null,
+  });
 
   // Mobile cart/check sheet
   const [mobileSheetOpen, setMobileSheetOpen] = useState<boolean>(false);
@@ -153,14 +177,15 @@ function SoulmateHallOrderInner() {
 
   useEffect(() => {
     loadData();
+    // Fast 3-second real-time sync so hall customers receive instant barista/cashier updates!
     const interval = setInterval(() => {
-      fetch("/api/tables")
+      fetch("/api/tables", { cache: "no-store" })
         .then((r) => r.json())
         .then((d) => {
           if (d.success && Array.isArray(d.tables)) setTables(d.tables);
         })
         .catch(() => {});
-    }, 10000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [loadData]);
 
@@ -179,6 +204,41 @@ function SoulmateHallOrderInner() {
   }, [tables, selectedTableNumber]);
 
   const activeOrder = activeTableObj?.activeOrder || null;
+
+  // Real-Time Customer Notifications when Barista / Cashier updates the table order!
+  useEffect(() => {
+    if (!selectedTableNumber) return;
+    const prev = prevOrderStateRef.current;
+    const currId = activeOrder?.id || null;
+    const currStatus = activeOrder?.status || null;
+
+    // Order status changed on the same active order
+    if (prev.id && currId === prev.id && prev.status && currStatus && prev.status !== currStatus) {
+      let title = `تحديث طلب طاولة ${selectedTableNumber} — Soulmate ☕`;
+      let body = "";
+      if (currStatus === "PREPARING") {
+        body = "👨‍🍳 الباريستا استلم طلبك وبدأ تحضيره الآن!";
+      } else if (currStatus === "READY_TO_SERVE") {
+        body = "✅ طلبك جاهز الآن وفي طريقه لطاولتك!";
+      } else if (currStatus === "COMPLETED") {
+        body = "🎉 تم إقفال الشيك بنجاح — شكراً لزيارتك Soulmate!";
+      }
+      if (body) {
+        playCustomerUpdateChime();
+        setLiveNotif({ title, body });
+        showBrowserNotification(title, body);
+      }
+    } else if (prev.id && !currId) {
+      // Table check was settled and closed by cashier!
+      const title = `تم تسوية شيك طاولة ${selectedTableNumber} ✅`;
+      const body = "شكراً لزيارتك Soulmate Dessert & Coffee — نتمنى لك يوماً سعيداً ☕💛";
+      playCustomerUpdateChime();
+      setLiveNotif({ title, body });
+      showBrowserNotification(title, body);
+    }
+
+    prevOrderStateRef.current = { id: currId, status: currStatus };
+  }, [activeOrder?.id, activeOrder?.status, selectedTableNumber]);
 
   const openCheckItems = useMemo(() => {
     if (!activeOrder?.items) return [];
@@ -282,6 +342,7 @@ function SoulmateHallOrderInner() {
     }
     if (cart.length === 0) return;
 
+    requestBrowserNotificationPermission();
     setSubmittingOrder(true);
     try {
       const res = await fetch("/api/orders", {
@@ -514,6 +575,25 @@ function SoulmateHallOrderInner() {
             </div>
           ) : (
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/15 p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-white/10">
+                <span className="text-[11px] font-bold text-white/65">حالة التحضير الآن:</span>
+                <span
+                  className={`text-[11px] font-black px-2.5 py-0.5 rounded-full ${
+                    activeOrder.status === "READY_TO_SERVE"
+                      ? "bg-emerald-500/25 text-emerald-300 border border-emerald-400/40"
+                      : activeOrder.status === "PREPARING"
+                      ? "bg-sky-500/25 text-sky-300 border border-sky-400/40"
+                      : "bg-amber-500/20 text-amber-300 border border-amber-400/35"
+                  }`}
+                >
+                  {activeOrder.status === "READY_TO_SERVE"
+                    ? "✅ جاهز وفي طريقه إليك"
+                    : activeOrder.status === "PREPARING"
+                    ? "☕ الباريستا يحضّر طلبك"
+                    : "⏳ تم الإرسال — بانتظار الباريستا"}
+                </span>
+              </div>
+
               <div className="space-y-1.5 max-h-[180px] overflow-y-auto pl-1">
                 {openCheckItems.map((it: any, idx: number) => (
                   <div
@@ -586,6 +666,24 @@ function SoulmateHallOrderInner() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0e0b0a] text-amber-50 flex flex-col">
+      {/* Real-Time Customer Update Notification Banner */}
+      {liveNotif && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[130] max-w-md w-[94%] rounded-2xl bg-gradient-to-l from-amber-500 to-amber-600 text-black px-4 py-3.5 shadow-2xl border-2 border-amber-200 flex items-start gap-3 animate-bounce">
+          <Bell className="w-5 h-5 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <div className="text-xs sm:text-sm font-black">{liveNotif.title}</div>
+            <div className="text-[11px] sm:text-xs font-bold mt-0.5">{liveNotif.body}</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setLiveNotif(null)}
+            className="p-1 rounded-lg bg-black/15 hover:bg-black/25"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[120] max-w-md w-[92%] rounded-2xl bg-emerald-600 text-white px-4 py-3 shadow-2xl border border-emerald-300/40 flex items-center gap-2 text-xs md:text-sm font-black">

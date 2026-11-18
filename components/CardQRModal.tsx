@@ -17,7 +17,7 @@ export default function CardQRModal({
   onClose,
   soulmatePhone = "01557879033",
 }: CardQRModalProps) {
-  const [origin, setOrigin] = useState("https://soulmate-cafe.vercel.app");
+  const [origin, setOrigin] = useState("https://soulmate-navy.vercel.app");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {

@@ -675,7 +675,7 @@ export async function POST(req: Request) {
             finalAmount: Number(newFinal.toFixed(2)),
             pointsEarned: { increment: addedPoints },
             notes: combinedNotes,
-            status: "PREPARING", // Preparing round 2 / round 3
+            status: "NEW_PENDING", // Alert barista & POS for round 2 / round 3!
           },
         });
 
