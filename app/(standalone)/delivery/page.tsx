@@ -28,7 +28,9 @@ import {
   ChevronUp,
   X,
   Clock,
+  UtensilsCrossed,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeProviderAndToggle";
 import { getCategoryLabel } from "@/lib/categories";
 import {
   registerAudioUnlockListeners,
@@ -337,7 +339,7 @@ export default function SoulmateDeliveryPage() {
   const cartSubtotal = cart.reduce((s, c) => s + c.price * c.qty, 0);
   const grandTotal = cartSubtotal + deliveryFee;
 
-  const instapayValue = settings?.instapayAccount || "soulmate@instapay";
+  const instapayValue = settings?.instapayAccount || "01271673463";
   const walletValue = settings?.vodafoneCashNumber || settings?.soulmatePhone || "01557879033";
   const receiptWhatsappRaw = settings?.whatsapp || settings?.soulmatePhone || "01557879033";
   const receiptWhatsappWa = normalizeEgyptWa(receiptWhatsappRaw);
@@ -722,15 +724,20 @@ export default function SoulmateDeliveryPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-700 flex items-center justify-center text-black shadow-lg"
-              title="الرئيسية"
+              className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-700 flex items-center justify-center text-black shadow-lg hover:scale-105 transition"
+              title="العودة للشاشة الرئيسية"
             >
               <Coffee className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-lg font-black text-amber-100 leading-none">Soulmate</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-black text-amber-100 leading-none">Soulmate</h1>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  دليفري وتيك أواي 🛵
+                </span>
+              </div>
               <p className="text-[11px] text-emerald-300/80 font-bold mt-0.5">
-                دليفري وتيك أواي • توصيل سريع
+                توصيل سريع ولحظي • قهوة وحلويات
               </p>
             </div>
           </div>
@@ -764,23 +771,40 @@ export default function SoulmateDeliveryPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-end">
-            <div className="relative flex-1 sm:w-52">
+            {/* Quick Switch to Dine-In */}
+            <Link
+              href="/order"
+              className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-black flex items-center gap-1.5 transition shrink-0"
+              title="التبديل إلى منيو الصالة (طاولات الكافيه)"
+            >
+              <UtensilsCrossed className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">منيو الصالة (QR) ☕</span>
+              <span className="sm:hidden">الصالة ☕</span>
+            </Link>
+
+            {/* Home Navigation */}
+            <Link
+              href="/"
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-amber-200 transition shrink-0"
+              title="العودة للرئيسية"
+            >
+              <Home className="w-4 h-4" />
+            </Link>
+
+            {/* Theme Toggle (Day / Night Mode) */}
+            <ThemeToggle compact />
+
+            {/* Search */}
+            <div className="relative flex-1 sm:w-44">
               <Search className="w-4 h-4 text-amber-300/60 absolute right-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث في المنيو..."
-                className="w-full pr-9 pl-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-amber-50 placeholder:text-white/35 focus:outline-none focus:border-amber-400"
+                placeholder="ابحث..."
+                className="w-full pr-9 pl-3 py-1.5 rounded-xl bg-black/50 border border-white/10 text-xs text-amber-50 placeholder:text-white/35 focus:outline-none focus:border-amber-400"
               />
             </div>
-            <Link
-              href="/"
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-amber-200"
-              title="العودة للرئيسية"
-            >
-              <Home className="w-4 h-4" />
-            </Link>
           </div>
         </div>
 

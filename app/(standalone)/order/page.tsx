@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Coffee,
   ShoppingBag,
@@ -23,7 +24,10 @@ import {
   UtensilsCrossed,
   ChevronUp,
   Bell,
+  Home,
+  Bike,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeProviderAndToggle";
 import { getCategoryLabel } from "@/lib/categories";
 import {
   registerAudioUnlockListeners,
@@ -477,7 +481,7 @@ function SoulmateHallOrderInner() {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const instapayValue = settings?.instapayAccount || "soulmate@instapay";
+  const instapayValue = settings?.instapayAccount || "01271673463";
   const walletValue = settings?.vodafoneCashNumber || settings?.soulmatePhone || "01557879033";
   const receiptWhatsappRaw = settings?.whatsapp || settings?.soulmatePhone || "01557879033";
   const receiptWhatsappWa = normalizeEgyptWa(receiptWhatsappRaw);
@@ -731,17 +735,26 @@ function SoulmateHallOrderInner() {
         </div>
       )}
 
-      {/* Minimalist Clean Header — ZERO Clutter */}
+      {/* Minimalist Clean Header with Theme Toggle & Multi-Channel Navigation */}
       <header className="sticky top-0 z-30 bg-[#14100e]/95 backdrop-blur-md border-b border-amber-500/20 px-4 py-3">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center text-black shadow-lg shadow-amber-500/20">
+            <Link
+              href="/"
+              className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center text-black shadow-lg shadow-amber-500/20 hover:scale-105 transition"
+              title="العودة للشاشة الرئيسية"
+            >
               <Coffee className="w-5 h-5" />
-            </div>
+            </Link>
             <div>
-              <h1 className="text-lg font-black tracking-wide text-amber-100 leading-none">
-                Soulmate
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-black tracking-wide text-amber-100 leading-none">
+                  Soulmate
+                </h1>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  صالة ☕
+                </span>
+              </div>
               <p className="text-[11px] text-amber-300/75 font-bold mt-0.5">
                 Dessert &amp; Coffee • منيو الصالة
               </p>
@@ -749,27 +762,50 @@ function SoulmateHallOrderInner() {
           </div>
 
           <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-end">
-            {/* Search */}
-            <div className="relative flex-1 sm:w-56">
-              <Search className="w-4 h-4 text-amber-300/60 absolute right-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث في المنيو..."
-                className="w-full pr-9 pl-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-amber-50 placeholder:text-white/35 focus:outline-none focus:border-amber-400"
-              />
-            </div>
+            {/* Quick Switch to Delivery / Takeaway */}
+            <Link
+              href="/delivery"
+              className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-black flex items-center gap-1.5 transition shrink-0"
+              title="التبديل إلى خدمة دليفري وتيك أواي"
+            >
+              <Bike className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">دليفري وتيك أواي 🛵</span>
+              <span className="sm:hidden">دليفري 🛵</span>
+            </Link>
+
+            {/* Home Navigation */}
+            <Link
+              href="/"
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-amber-200 transition shrink-0"
+              title="العودة للرئيسية"
+            >
+              <Home className="w-4 h-4" />
+            </Link>
+
+            {/* Theme Toggle (Day / Night Mode) */}
+            <ThemeToggle compact />
 
             {/* Active Table Pill */}
             <button
               type="button"
               onClick={() => setShowTablePicker(true)}
-              className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-xs font-black flex items-center gap-1.5 shrink-0 transition"
+              className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-xs font-black flex items-center gap-1.5 shrink-0 transition"
             >
               <UtensilsCrossed className="w-3.5 h-3.5 text-amber-300" />
               {selectedTableNumber ? `طاولة ${selectedTableNumber}` : "اختر طاولتك"}
             </button>
+
+            {/* Search */}
+            <div className="relative flex-1 sm:w-44">
+              <Search className="w-4 h-4 text-amber-300/60 absolute right-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث..."
+                className="w-full pr-9 pl-3 py-1.5 rounded-xl bg-black/50 border border-white/10 text-xs text-amber-50 placeholder:text-white/35 focus:outline-none focus:border-amber-400"
+              />
+            </div>
           </div>
         </div>
 

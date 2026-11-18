@@ -75,9 +75,12 @@ html.light :is(
   .bg-stone-950,
   .bg-\[\#07070a\],
   .bg-\[\#07070b\],
+  .bg-\[\#0c0908\],
+  .bg-\[\#0e0b0a\],
   .bg-\[\#060a14\],
   .bg-\[\#0f0e13\],
   .bg-\[\#110c14\],
+  .bg-\[\#120d0a\],
   .bg-\[\#120d14\],
   .bg-\[\#120e15\],
   .bg-\[\#140e16\],
@@ -95,19 +98,29 @@ html.light :is(
   .bg-slate-950\/80,
   .bg-slate-950\/90,
   .bg-slate-950\/95,
-  .bg-\[\#120d14\]\/95
+  .bg-\[\#120d14\]\/95,
+  .bg-\[\#14100e\],
+  .bg-\[\#14100e\]\/95,
+  .bg-\[\#15110f\],
+  .bg-\[\#15110f\]\/95
 ) {
-  background-color: rgba(255, 255, 255, 0.92);
+  background-color: rgba(255, 255, 255, 0.94);
 }
 
-/* Cards & Elevated Panels */
+/* Cards & Elevated Panels (Customer Menu & Dashboard) */
 html.light :is(
   .bg-slate-900,
   .bg-stone-900,
+  .bg-\[\#161210\],
+  .bg-\[\#171210\],
+  .bg-\[\#171311\],
   .bg-\[\#18121c\],
+  .bg-\[\#1a1412\],
+  .bg-\[\#1c1410\],
   .bg-\[\#1d111b\]
 ) {
   background-color: #ffffff;
+  border-color: #e2e8f0;
 }
 
 html.light :is(
@@ -194,11 +207,11 @@ html.light .bg-cyan-950\/30 {
 }
 
 /* 2. Gradient Stops (Tailwind v4 custom props cascade cleanly into linear-gradients) */
-html.light :is(.from-slate-950, .from-stone-950, .from-\[\#060913\]) {
+html.light :is(.from-slate-950, .from-stone-950, .from-\[\#060913\], .from-\[\#0e0b0a\], .from-\[\#0c0908\]) {
   --tw-gradient-from: #f4f6fb;
 }
-html.light :is(.via-slate-950, .via-stone-950) {
-  --tw-gradient-via: #f8fafc;
+html.light :is(.via-slate-950, .via-stone-950, .via-\[\#0e0b0a\]\/95, .via-\[\#0c0908\]\/95) {
+  --tw-gradient-via: rgba(244, 246, 251, 0.95);
 }
 html.light :is(.to-slate-950, .to-stone-950, .to-\[\#060913\]) {
   --tw-gradient-to: #eef2f7;
@@ -268,11 +281,14 @@ html.light :is(.divide-slate-800, .divide-white\/10) > :not(:last-child) {
 }
 
 /* 4. Typography & Tiny Label Contrast Engine */
-html.light :is(.text-white, .text-slate-100) {
+html.light :is(.text-white, .text-slate-100, .text-amber-50, .text-amber-100) {
   color: #0f172a;
 }
-html.light .text-white\/70 {
-  color: rgba(15, 23, 42, 0.8);
+html.light :is(.text-white\/70, .text-amber-100\/70, .text-amber-100\/65, .text-emerald-100\/70) {
+  color: rgba(15, 23, 42, 0.82);
+}
+html.light :is(.text-white\/60, .text-white\/45, .text-white\/40, .text-white\/35, .text-white\/30, .text-amber-100\/45, .text-amber-200\/50, .text-amber-200\/45, .text-amber-200\/55) {
+  color: #475569;
 }
 html.light .text-slate-200 {
   color: #1e293b;
@@ -287,10 +303,10 @@ html.light .text-slate-600 {
   color: #64748b;
 }
 
-html.light :is(.text-amber-200, .text-amber-200\/90, .text-amber-200\/80, .text-amber-200\/70) {
+html.light :is(.text-amber-200, .text-amber-200\/90, .text-amber-200\/80, .text-amber-200\/70, .text-amber-200\/75) {
   color: #92400e;
 }
-html.light :is(.text-amber-300, .text-amber-300\/90, .text-amber-300\/80, .text-amber-300\/75, .text-amber-300\/70) {
+html.light :is(.text-amber-300, .text-amber-300\/90, .text-amber-300\/80, .text-amber-300\/75, .text-amber-300\/70, .text-amber-300\/60) {
   color: #b45309;
 }
 html.light :is(.text-amber-400, .text-amber-400\/80, .text-amber-500) {

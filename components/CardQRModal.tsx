@@ -28,13 +28,13 @@ export default function CardQRModal({
 
   if (!isOpen) return null;
 
-  const hallOrderUrl = `${origin}/order`;
+  const landingUrl = `${origin}/`;
   const qrImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=420x420&margin=12&color=1c130d&bgcolor=fffdf8&data=${encodeURIComponent(
-    hallOrderUrl
+    landingUrl
   )}`;
 
   const handleCopy = () => {
-    navigator.clipboard?.writeText(hallOrderUrl).catch(() => {});
+    navigator.clipboard?.writeText(landingUrl).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -46,7 +46,7 @@ export default function CardQRModal({
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>Soulmate Hall QR Card</title>
+  <title>Soulmate QR Card</title>
   <style>
     @page { size: A5 portrait; margin: 0; }
     body {
@@ -132,15 +132,15 @@ export default function CardQRModal({
   <div class="card">
     <div class="brand">Soulmate</div>
     <div class="sub">Dessert &amp; Coffee</div>
-    <div class="headline">امسح الكود واطلب من طاولتك ☕✨</div>
-    <div class="desc">اختر رقم الطاولة • تصفح المنيو • اكتب ملاحظتك للباريستا • اطلب الحساب</div>
+    <div class="headline">امسح الكود واختر خدمتك ☕✨</div>
+    <div class="desc">منيو الصالة الذكية • دليفري وتيك أواي • تسجيل الإدارة</div>
     <div class="qr-box">
       <img src="${qrImgSrc}" alt="Soulmate QR" />
     </div>
     <div class="steps">
       <span>1️⃣ امسح الكود</span>
-      <span>2️⃣ اختر طاولتك</span>
-      <span>3️⃣ اطلب واستمتع</span>
+      <span>2️⃣ اختر (صالة / دليفري)</span>
+      <span>3️⃣ اطلب واستمتع ☕</span>
     </div>
     <div class="footer">تطوير شركة أوركا للحلول البرمجية (Orca Tech) 🐬 • 📞 01018671000</div>
   </div>
@@ -159,7 +159,7 @@ export default function CardQRModal({
         <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-amber-500/10">
           <div className="flex items-center gap-2">
             <QrCode className="w-5 h-5 text-amber-400" />
-            <h2 className="text-base font-black text-amber-100">كارت QR الصالة — Soulmate</h2>
+            <h2 className="text-base font-black text-amber-100">كارت QR الموحد — Soulmate</h2>
           </div>
           <button
             type="button"
@@ -173,16 +173,16 @@ export default function CardQRModal({
         <div className="p-6 text-center space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 text-xs font-black">
             <Coffee className="w-3.5 h-3.5" />
-            <span>كود موحد لطاولات الصالة — يختار العميل رقم طاولته</span>
+            <span>يفتح شاشة الاختيارات (صالة / دليفري / إدارة)</span>
           </div>
 
           <div className="mx-auto w-56 h-56 p-3 rounded-2xl bg-[#fffdf8] border-2 border-amber-400 shadow-xl">
-            <img src={qrImgSrc} alt="Soulmate Hall QR" className="w-full h-full object-contain" />
+            <img src={qrImgSrc} alt="Soulmate QR" className="w-full h-full object-contain" />
           </div>
 
           <div className="rounded-xl bg-black/50 border border-white/10 px-3 py-2 flex items-center justify-between gap-2 text-xs">
             <span className="font-mono text-amber-200 truncate" dir="ltr">
-              {hallOrderUrl}
+              {landingUrl}
             </span>
             <button
               type="button"
@@ -200,7 +200,7 @@ export default function CardQRModal({
             className="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition"
           >
             <Printer className="w-4 h-4" />
-            طباعة كارت QR الصالة بجودة عالية
+            طباعة كارت QR بجودة عالية
           </button>
         </div>
       </div>
