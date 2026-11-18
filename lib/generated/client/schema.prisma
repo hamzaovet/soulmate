@@ -1,0 +1,739 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/client"
+}
+
+// ----------------------------------------------------
+// 1. OUTLETS & BRANDS (سول ميت كافيه & حلواني أبو عادل)
+// ----------------------------------------------------
+model Outlet {
+  id        String   @id @default(cuid())
+  name      String // "سول ميت كافيه (Soulmate Cafe)" | "حلواني أبو عادل (Abu Adel Patisserie)"
+  code      String   @unique // "SOULMATE_CAFE" | "ABU_ADEL_PATISSERIE"
+  type      String   @default("CAFE") // "CAFE" | "PASTRY_SHOP"
+  address   String
+  phone     String
+  whatsapp  String?
+  logoUrl   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  users                User[]
+  tables               DiningTable[]
+  menuItems            MenuItem[]
+  rawMaterials         RawMaterial[]
+  orders               Order[]
+  shifts               Shift[]
+  expenses             Expense[]
+  reservations         Reservation[]
+  chatMessages         ChatMessage[]
+  inventoryAudits      InventoryAudit[]
+  pastryAudits         PastryAudit[]
+  dailyCloses          DailyClose[]
+  deliveryDrivers      DeliveryDriver[]
+  factoryOrders        FactoryOrder[]
+  suppliers            Supplier[]
+  supplierTransactions SupplierTransaction[]
+}
+
+// ----------------------------------------------------
+// 2. USERS, ROLES & PERMISSIONS (المستخدمين وطاقم العمل)
+// ----------------------------------------------------
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  username     String   @unique
+  passwordHash String
+  pin          String   @default("159920") // PIN code for quick cashier / POS switches
+  phone        String?
+  role         String   @default("cashier") // owner, general_manager, branch_manager, cashier, barista, chef, waiter
+  outletId     String?
+  outlet       Outlet?  @relation(fields: [outletId], references: [id], onDelete: SetNull)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+// ----------------------------------------------------
+// 3. DINING TABLES & ZONES (ترابيزات كافيه سول ميت)
+// ----------------------------------------------------
+model DiningTable {
+  id            String   @id @default(cuid())
+  outletId      String
+  outlet        Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  tableNumber   String // "T-01", "T-02", "VIP-1", "TERRACE-2"
+  zone          String   @default("INDOOR") // "INDOOR", "OUTDOOR", "VIP_LOUNGE"
+  capacity      Int      @default(4)
+  status        String   @default("AVAILABLE") // "AVAILABLE", "OCCUPIED", "BILL_REQUESTED", "RESERVED"
+  activeOrderId String?
+  qrCodeUrl     String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  orders Order[]
+}
+
+// ----------------------------------------------------
+// 4. MENU ITEMS & FINISHED GOODS (أصناف الكافيه وحلواني أبو عادل)
+// ----------------------------------------------------
+model MenuItem {
+  id                    String   @id @default(cuid())
+  outletId              String
+  outlet                Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  nameAr                String
+  nameEn                String?
+  category              String // HOT_COFFEE, COLD_COFFEE, BEVERAGES, WAFFLES_PANCAKES, ORIENTAL_SWEETS, WESTERN_PASTRY, CAKES_TORTES, ICE_CREAM, GIFT_BOXES
+  price                 Float
+  costPrice             Float    @default(0) // Calculated from Recipe or purchase cost
+  durationMinutes       Int      @default(5)
+  description           String?
+  image                 String?
+  itemType              String   @default("PREPARED_BEVERAGE") // "PREPARED_BEVERAGE" (uses recipe) | "READY_PASTRY" (finished unit) | "RETAIL"
+  unitType              String   @default("PIECE") // "PIECE", "PORTION", "KG", "BOX"
+  openingStock          Float    @default(0) // رصيد بداية المدة الافتتاحي للحلويات
+  stockQty              Float    @default(0) // الرصيد الفعلي الحالي بالمحل (يدعم الكسور للكيلو)
+  minStockAlert         Float    @default(10)
+  defaultSupplierId     String?
+  isAvailable           Boolean  @default(true)
+  sortOrder             Int      @default(0)
+  loyaltyPointsEarned   Int      @default(5)
+  loyaltyPointsRequired Int      @default(50)
+  createdAt             DateTime @default(now())
+
+  recipes   RecipeItem[]
+  movements ProductMovement[]
+}
+
+// ----------------------------------------------------
+// 4.1 PRODUCT MOVEMENTS (حركات توريد ومبيعات وجرد حلويات أبو عادل)
+// ----------------------------------------------------
+model ProductMovement {
+  id            String   @id @default(cuid())
+  menuItemId    String
+  menuItem      MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  type          String // "INBOUND" (توريد من المعمل), "SALE" (بيع فاتورة), "ADJUSTMENT" (تسوية جردية), "INITIAL" (رصيد بداية المدة)
+  quantity      Float // positive for inbound/surplus, negative for sale/deficit
+  unitCost      Float? // Cost price
+  totalCost     Float? // quantity * unitCost
+  supplierName  String? // اسم الشيف أو المعمل
+  invoiceNumber String? // رقم إذن التشغيل أو الفاتورة
+  orderNumber   String? // رقم الفاتورة أو الأوردر
+  recordedBy    String? // اسم المستخدم
+  notes         String? // ملاحظات
+  createdAt     DateTime @default(now())
+}
+
+// ----------------------------------------------------
+// 4.2 PASTRY AUDITS (محاضر الجرد المقارن لحلويات أبو عادل)
+// ----------------------------------------------------
+model PastryAudit {
+  id          String            @id @default(cuid())
+  outletId    String
+  outlet      Outlet            @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  auditorName String            @default("المايسترو")
+  notes       String?
+  items       PastryAuditItem[]
+  createdAt   DateTime          @default(now())
+}
+
+model PastryAuditItem {
+  id            String      @id @default(cuid())
+  auditId       String
+  audit         PastryAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  menuItemId    String
+  menuItemName  String
+  unitType      String
+  price         Float       @default(0)
+  costPrice     Float       @default(0)
+  openingStock  Float       @default(0)
+  totalInbound  Float       @default(0)
+  totalSold     Float       @default(0)
+  expectedStock Float       @default(0)
+  actualStock   Float       @default(0)
+  variance      Float       @default(0)
+  varianceCost  Float       @default(0)
+  status        String      @default("MATCH") // "MATCH" | "DEFICIT" | "SURPLUS"
+  createdAt     DateTime    @default(now())
+}
+
+// ----------------------------------------------------
+// 5. RAW MATERIALS INVENTORY (خامات البار ومخزن المشروبات)
+// ----------------------------------------------------
+model RawMaterial {
+  id                String   @id @default(cuid())
+  outletId          String
+  outlet            Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  nameAr            String // بن إسبريسو حبوب، حليب كامل الدسم، سيرب فانيليا، صوص لوتس، أكواب ورقية
+  unit              String   @default("GRAM") // "GRAM", "ML", "PIECE", "PUMP", "KG", "LITER"
+  openingStock      Float    @default(0) // رصيد بداية المدة
+  currentStock      Float    @default(1000)
+  minStockAlert     Float    @default(200)
+  leadTimeDays      Int      @default(3) // مهلة تنفيذ المصنع / التوريد بالأيام (مثلاً 21 يوم للأكواب الكرتون)
+  avgDailyUsage     Float    @default(0) // الاستهلاك اليومي التقديري اليدوي (اختياري)
+  costPerUnit       Float    @default(0.5) // EGP per Gram or ML
+  supplierName      String?
+  defaultSupplierId String?
+  notes             String?
+  updatedAt         DateTime @default(now()) @updatedAt
+
+  recipeUsage RecipeItem[]
+  movements   RawMaterialMovement[]
+}
+
+// ----------------------------------------------------
+// 5.1 RAW MATERIAL MOVEMENTS (حركات توريد واستهلاك وتسوية الخامات)
+// ----------------------------------------------------
+model RawMaterialMovement {
+  id            String      @id @default(cuid())
+  rawMaterialId String
+  rawMaterial   RawMaterial @relation(fields: [rawMaterialId], references: [id], onDelete: Cascade)
+  type          String // "INBOUND" (توريد بضاعة), "CONSUMPTION" (استهلاك ريسيبي مبيعات), "ADJUSTMENT" (تسوية جردية)
+  quantity      Float // Quantity in rawMaterial.unit (positive for inbound/surplus, negative for consumption/deficit)
+  costPerUnit   Float? // Cost per unit at time of movement
+  totalCost     Float? // Total monetary value
+  supplierName  String? // اسم المورد
+  invoiceNumber String? // رقم الفاتورة أو إذن التوريد
+  orderNumber   String? // رقم الطلب لو استهلاك ريسيبي
+  recordedBy    String? // اسم المسؤول
+  notes         String? // ملاحظات الحركة
+  createdAt     DateTime    @default(now())
+}
+
+// ----------------------------------------------------
+// 5.2 INVENTORY RECONCILIATION AUDITS (محاضر الجرد المقارن الفوري)
+// ----------------------------------------------------
+model InventoryAudit {
+  id          String               @id @default(cuid())
+  outletId    String
+  outlet      Outlet               @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  auditorName String               @default("المايسترو")
+  notes       String?
+  items       InventoryAuditItem[]
+  createdAt   DateTime             @default(now())
+}
+
+model InventoryAuditItem {
+  id              String         @id @default(cuid())
+  auditId         String
+  audit           InventoryAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  rawMaterialId   String
+  rawMaterialName String
+  unit            String
+  costPerUnit     Float          @default(0)
+  openingStock    Float          @default(0)
+  totalInbound    Float          @default(0)
+  totalConsumed   Float          @default(0)
+  expectedStock   Float          @default(0)
+  actualStock     Float          @default(0)
+  variance        Float          @default(0) // actual - expected
+  varianceCost    Float          @default(0) // variance * costPerUnit
+  status          String         @default("MATCH") // "MATCH" | "DEFICIT" | "SURPLUS"
+  createdAt       DateTime       @default(now())
+}
+
+// ----------------------------------------------------
+// 6. RECIPES & BILL OF MATERIALS (الريسيبي وخصم الخامات)
+// ----------------------------------------------------
+model RecipeItem {
+  id            String      @id @default(cuid())
+  menuItemId    String
+  menuItem      MenuItem    @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  rawMaterialId String
+  rawMaterial   RawMaterial @relation(fields: [rawMaterialId], references: [id], onDelete: Cascade)
+  qtyRequired   Float // 18 grams, 160 ml, 1 piece
+  createdAt     DateTime    @default(now())
+
+  @@unique([menuItemId, rawMaterialId])
+}
+
+// ----------------------------------------------------
+// 7. CUSTOMERS & LOYALTY CRM (قاعدة العملاء وبرنامج الولاء)
+// ----------------------------------------------------
+model Customer {
+  id               String    @id @default(cuid())
+  name             String
+  phone            String    @unique
+  email            String?
+  passwordHash     String?
+  isVerified       Boolean   @default(false)
+  verificationCode String?
+  address          String?
+  city             String?
+  loyaltyPoints    Int       @default(0)
+  totalSpent       Float     @default(0)
+  visitCount       Int       @default(0)
+  lastVisitAt      DateTime?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @default(now()) @updatedAt
+
+  orders Order[]
+}
+
+// ----------------------------------------------------
+// 7.5 DELIVERY ZONES & DYNAMIC SHIPPING FEES (مناطق التوصيل الديناميكية)
+// ----------------------------------------------------
+model DeliveryZone {
+  id            String   @id @default(cuid())
+  nameAr        String // حدائق القبة، مصر الجديدة، مدينة نصر...
+  nameEn        String?
+  fee           Float    @default(20)
+  estimatedTime String   @default("30-45 دقيقة")
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  orders Order[]
+}
+
+// ----------------------------------------------------
+// 7.6 DELIVERY DRIVERS (عمال التوصيل / الطيارين)
+// ----------------------------------------------------
+model DeliveryDriver {
+  id          String   @id @default(cuid())
+  outletId    String?
+  outlet      Outlet?  @relation(fields: [outletId], references: [id], onDelete: SetNull)
+  name        String
+  phone       String
+  vehicleInfo String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  orders Order[]
+}
+
+// ----------------------------------------------------
+// 8. ORDERS & TICKETS (الطلبات والشيكات والفواتير)
+// ----------------------------------------------------
+model Order {
+  id                String          @id @default(cuid())
+  outletId          String
+  outlet            Outlet          @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  orderNumber       String          @unique // "SOUL-1001"
+  dailyTicketNo     Int             @default(1) // رقم البون اليومي المتسلسل (1, 2, 3...)
+  shiftCode         String          @default("SHIFT_1") // "SHIFT_1" | "SHIFT_2"
+  billPaymentMethod String? // طريقة الدفع التي اختارها العميل عند طلب الحساب (CASH | INSTAPAY | VODAFONE_CASH)
+  orderType         String          @default("DINE_IN") // "DINE_IN", "TAKEAWAY", "DELIVERY"
+  tableId           String?
+  table             DiningTable?    @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  tableNumber       String?
+  deliveryZoneId    String?
+  deliveryZone      DeliveryZone?   @relation(fields: [deliveryZoneId], references: [id], onDelete: SetNull)
+  deliveryZoneName  String? // Snapshot of area/zone name
+  deliveryAddress   String?
+  deliveryPhone     String?
+  deliveryNotes     String?
+  driverId          String?
+  driver            DeliveryDriver? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  driverName        String? // اسم الطيار المخصص للتوصيل
+  driverPhone       String? // رقم تليفون الطيار
+  dispatchedAt      DateTime? // وقت خروج الأوردر مع الطيار
+  isScheduled       Boolean         @default(false) // طلب مسبق / حجز لموعد محدد
+  scheduledFor      DateTime? // تاريخ ووقت التسليم المطلوب
+  depositRequired   Float           @default(0)
+  depositPaid       Float           @default(0)
+  depositStatus     String          @default("NONE") // "NONE", "PENDING_VERIFICATION", "CONFIRMED"
+  depositReceiptUrl String?
+  alertSent48h      Boolean         @default(false)
+  alertSent24h      Boolean         @default(false)
+  status            String          @default("NEW_PENDING") // "NEW_PENDING", "PREPARING", "READY_TO_SERVE", "OUT_FOR_DELIVERY", "COMPLETED", "CANCELLED"
+  paymentStatus     String          @default("PENDING") // "PENDING", "PAID"
+  paymentMethod     String          @default("CASH") // "CASH", "CARD", "INSTAPAY", "VODAFONE_CASH", "SPLIT"
+
+  subtotal          Float @default(0)
+  serviceCharge     Float @default(0)
+  taxAmount         Float @default(0)
+  deliveryFee       Float @default(0)
+  discountAmount    Float @default(0)
+  tipAmount         Float @default(0)
+  finalAmount       Float @default(0)
+  commissionPercent Float @default(0)
+  commissionAmount  Float @default(0)
+  platformNetAmount Float @default(0)
+
+  cashierName   String?
+  waiterName    String?
+  customerName  String?
+  customerPhone String?
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  pointsEarned   Int     @default(0)
+  pointsRedeemed Int     @default(0)
+  notes          String?
+  items          String // JSON Array of ordered items [{ menuItemId, nameAr, price, qty, notes, itemType }]
+
+  isEdited        Boolean   @default(false) // تم تعديل أصناف/كميات الفاتورة ("فاتورة معدلة")
+  revisionCount   Int       @default(0)
+  paymentModified Boolean   @default(false) // تم تغيير طريقة الدفع ("تعديل دفع")
+  lastEditReason  String?
+  lastEditedBy    String?
+  lastEditedAt    DateTime?
+
+  createdAt DateTime  @default(now())
+  settledAt DateTime?
+
+  kdsTickets KdsTicket[]
+  auditLogs  OrderAuditLog[]
+}
+
+// ----------------------------------------------------
+// 9. KDS (KITCHEN & BARISTA DISPLAY SYSTEM - شاشة المطبخ والبار)
+// ----------------------------------------------------
+model KdsTicket {
+  id           String    @id @default(cuid())
+  orderId      String
+  order        Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  station      String    @default("BARISTA") // "BARISTA", "KITCHEN", "PASTRY_COUNTER"
+  itemsSummary String // JSON or formatted string of items for this station
+  status       String    @default("QUEUED") // "QUEUED", "IN_PREPARATION", "DONE"
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime?
+}
+
+// ----------------------------------------------------
+// 10. SHIFTS & CASH REGISTER (الورديات والخزنة وتقفيل الدرج)
+// ----------------------------------------------------
+model Shift {
+  id               String  @id @default(cuid())
+  outletId         String
+  outlet           Outlet  @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  shiftNumber      Int     @default(1)
+  shiftCode        String  @default("SHIFT_1") // "SHIFT_1" | "SHIFT_2"
+  shiftName        String  @default("الوردية الأولى (الصباحية)")
+  openedBy         String // Cashier name
+  closedBy         String?
+  openingCashFloat Float   @default(0) // فكة الدرج الافتتاحية
+  expectedCash     Float   @default(0)
+  actualCash       Float   @default(0)
+  difference       Float   @default(0) // Actual - Expected
+
+  cashCollected     Float @default(0)
+  visaCollected     Float @default(0)
+  instapayCollected Float @default(0)
+  vodafoneCollected Float @default(0)
+  staffCollected    Float @default(0)
+  hospitalityTotal  Float @default(0)
+  creditTotal       Float @default(0)
+  tipsTotal         Float @default(0)
+  talabatCollected  Float @default(0)
+  talabatCommission Float @default(0)
+  deliveryFeesTotal Float @default(0) // رسوم الدليفري المنفصلة (مستحقات الطيارين)
+  totalRevenue      Float @default(0) // صافي إيراد المحل بدون رسوم التوصيل
+  expensesTotal     Float @default(0)
+  ticketsCount      Int   @default(0)
+
+  handedTo String? // المالك أو مدير الفرع المستلم
+  notes    String?
+  status   String    @default("OPEN") // "OPEN", "CLOSED"
+  openedAt DateTime  @default(now())
+  closedAt DateTime?
+}
+
+// ----------------------------------------------------
+// 10.1 DAILY CLOSE (إقفال اليومية الشاملة لكافة الشيفتات)
+// ----------------------------------------------------
+model DailyClose {
+  id                     String   @id @default(cuid())
+  outletId               String
+  outlet                 Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  closeDate              DateTime @default(now())
+  dayName                String? // "الأحد", "الإثنين", إلخ
+  shiftsCount            Int      @default(2)
+  totalRevenue           Float    @default(0)
+  totalCash              Float    @default(0)
+  totalVisa              Float    @default(0)
+  totalInstapay          Float    @default(0)
+  totalVodafone          Float    @default(0)
+  totalTalabat           Float    @default(0)
+  totalTalabatCommission Float    @default(0)
+  totalExpenses          Float    @default(0)
+  netCashInSafe          Float    @default(0)
+  ordersCount            Int      @default(0)
+  closedBy               String
+  notes                  String?
+  createdAt              DateTime @default(now())
+}
+
+// ----------------------------------------------------
+// 11. EXPENSES & PETTY CASH (المصروفات والنثريات اليومية)
+// ----------------------------------------------------
+model Expense {
+  id         String   @id @default(cuid())
+  outletId   String
+  outlet     Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  title      String
+  amount     Float
+  category   String   @default("SUPPLIES") // "RAW_MATERIALS", "SUPPLIES", "MAINTENANCE", "SALARIES", "UTILITIES", "MISC"
+  recordedBy String
+  notes      String?
+  createdAt  DateTime @default(now())
+}
+
+// ----------------------------------------------------
+// 12. SYSTEM SETTINGS & LOYALTY TOGGLE (الإعدادات العامة والولاء)
+// ----------------------------------------------------
+model SystemSettings {
+  id            String @id @default("default-settings")
+  brandNameAr   String @default("سول ميت كافيه — Soulmate Dessert & Coffee")
+  brandNameEn   String @default("Soulmate Dessert & Coffee")
+  cafeAddress   String @default("99st zamza mn elshisk 8orab")
+  soulmatePhone String @default("01557879033")
+  abuAdelPhone  String @default("01557879033")
+  hotline       String @default("01557879033")
+  whatsapp      String @default("01557879033")
+  haliyomakUrl  String @default("https://soulmate-cafe.vercel.app")
+  facebookUrl   String @default("https://www.facebook.com/hashtag/soulmate_cafe")
+
+  serviceChargePercent   Float   @default(0.0)
+  taxPercent             Float   @default(0.0)
+  deliveryFee            Float   @default(20.0)
+  preOrderDepositPercent Float   @default(30.0)
+  instapayAccount        String? @default("soulmate@instapay")
+  vodafoneCashNumber     String? @default("01557879033")
+  isServiceChargeEnabled Boolean @default(false)
+  isTaxEnabled           Boolean @default(false)
+
+  // نظام الورديتين بكود PIN (الوردية الأولى والثانية)
+  shift1Name String @default("الوردية الأولى (الصباحية)")
+  shift1Pin  String @default("1111")
+  shift2Name String @default("الوردية الثانية (المسائية)")
+  shift2Pin  String @default("2222")
+
+  // 👑 برنامج الولاء والهدايا (يطبق على أبو عادل وسول ميت ديناميكياً)
+  isLoyaltyEnabled         Boolean @default(true)
+  pointsPerPoundSpent      Float   @default(1.0) // مثال: 1 نقطة لكل 1 جنيه إنفاق
+  poundValuePerPoint       Float   @default(0.1) // قيمة الاستبدال المباشر لكل نقطة (اختياري)
+  loyaltyRewardThreshold   Int     @default(3000) // الهدف المطلوب (مثال: 3000 نقطة / جنيه)
+  loyaltyRewardValue       Float   @default(200) // قيمة الهدية عند الوصول للهدف (مثال: 200 جنيه)
+  loyaltyAppliesToAbuAdel  Boolean @default(true)
+  loyaltyAppliesToSoulmate Boolean @default(true)
+  loyaltyMotivationalMsg   String  @default("جمع نقط مع كل أوردر من حلواني أبو عادل وسول ميت كافيه — وكل ما توصل للهدف هتاخد هدية فورية تختار بيها أي حاجة تحبها! 🎁✨")
+
+  // 🎁 إدارة العروض الخاصة وماكينة الخصومات في اللاندينج بيدج
+  offersEnabled Boolean @default(true)
+  specialOffers String?
+
+  // 🔔 التقرير اليومي التلقائي والتنبيه الصوتي + توريد أبو عادل -> سول ميت + Gemini
+  dailyReportAlertEnabled     Boolean @default(true)
+  dailyReportAlertTime        String  @default("20:00") // 8:00 مساءً بتوقيت القاهرة (قابل للتعديل)
+  dailyReportRepeatSeconds    Int     @default(4)
+  dailyReportAlertSound       Boolean @default(true)
+  internalSupplyMarkupEnabled Boolean @default(false) // تفعيل هامش بسيط عند توريد أبو عادل لسول ميت
+  internalSupplyMarkupPercent Float   @default(0.0) // النسبة المئوية للهامش الإضافي (الافتراضي 0% نفس التكلفة)
+  talabatCommissionPercent    Float   @default(25.0) // عمولة طلبات (Talabat) الافتراضية %
+  geminiApiKey                String? // اختياري كاحتياطي في السحابة
+
+  receiptFooterNotes String   @default("شكراً لزيارتكم حلواني أبو عادل وسول ميت كافيه • حلي يومك واستمتع بقهوتك ☕🍰")
+  systemLocked       Boolean  @default(false)
+  lockMessage        String   @default("النظام مغلق مؤقتاً لأعمال الجرد والصيانة الدورية.")
+  vapidPublicKey     String?
+  vapidPrivateKey    String?
+  updatedAt          DateTime @default(now()) @updatedAt
+}
+
+// ----------------------------------------------------
+// 13. RESERVATIONS & EVENT BOOKINGS (حجز الترابيزات والحفلات)
+// ----------------------------------------------------
+model Reservation {
+  id              String   @id @default(cuid())
+  outletId        String
+  outlet          Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  customerName    String
+  customerPhone   String
+  customerEmail   String?
+  reservationType String   @default("TABLE") // "TABLE" (ترابيزة عادية) | "PARTY" (حفلة / عيد ميلاد / مناسبة)
+  guestCount      Int      @default(2)
+  bookingDate     DateTime
+  timeSlot        String // "07:00 PM"
+  zonePreference  String? // "INDOOR", "OUTDOOR_TERRACE", "VIP_LOUNGE"
+  specialRequests String?
+  status          String   @default("PENDING") // "PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"
+  createdAt       DateTime @default(now())
+}
+
+// ----------------------------------------------------
+// 14. INTERNAL LIVE CHAT (الشات الداخلي بين الزبون والباريستا/الإدارة)
+// ----------------------------------------------------
+model ChatMessage {
+  id          String   @id @default(cuid())
+  outletId    String
+  outlet      Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  senderType  String // "CUSTOMER" | "STAFF"
+  senderName  String
+  senderPhone String?
+  tableNumber String?
+  orderNumber String?
+  message     String
+  imageUrl    String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// ----------------------------------------------------
+// 15. DAILY FACTORY PROCUREMENT ORDERS (طلبيات المصنع اليومية لأبو عادل)
+// ----------------------------------------------------
+model FactoryOrder {
+  id         String             @id @default(cuid())
+  outletId   String
+  outlet     Outlet             @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  targetDate DateTime
+  status     String             @default("DRAFT") // "DRAFT", "SENT_TO_FACTORY", "RECEIVED"
+  createdBy  String             @default("المايسترو")
+  notes      String?
+  items      FactoryOrderItem[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @default(now()) @updatedAt
+}
+
+model FactoryOrderItem {
+  id             String       @id @default(cuid())
+  factoryOrderId String
+  factoryOrder   FactoryOrder @relation(fields: [factoryOrderId], references: [id], onDelete: Cascade)
+  menuItemId     String
+  menuItemName   String
+  unitType       String
+  currentStock   Float        @default(0)
+  minStockLevel  Float        @default(0)
+  shortageQty    Float        @default(0)
+  preOrderQty    Float        @default(0)
+  suggestedQty   Float        @default(0)
+  approvedQty    Float        @default(0)
+  notes          String?
+}
+
+// ----------------------------------------------------
+// 16. SUPPLIERS & INTER-BRAND LEDGER (المصنع والموردين وحساب أبو عادل <-> سول ميت)
+// ----------------------------------------------------
+model Supplier {
+  id                     String   @id @default(cuid())
+  outletId               String
+  outlet                 Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  code                   String? // "MAIN_FACTORY", "ABU_ADEL_INTERNAL", "CUPS_PACKAGING", custom
+  name                   String
+  supplierType           String   @default("FACTORY") // "FACTORY" | "RAW_MATERIALS" | "INTERNAL_ABU_ADEL" | "GENERAL"
+  phone                  String?
+  contactPerson          String?
+  address                String?
+  openingBalance         Float    @default(0) // رصيد أول المدة الدائن للمورد (علينا له)
+  isInternalSupply       Boolean  @default(false) // true لحساب توريد حلواني أبو عادل -> سول ميت كافيه
+  deductFromSourceOutlet Boolean  @default(true) // عند توريد أبو عادل لسول ميت: خصم من مخزن أبو عادل تلقائياً
+  notes                  String?
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @default(now()) @updatedAt
+
+  transactions SupplierTransaction[]
+}
+
+model SupplierTransaction {
+  id              String   @id @default(cuid())
+  supplierId      String
+  supplier        Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  outletId        String
+  outlet          Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  type            String // "INVOICE" | "PAYMENT" | "RETURN" | "ADJUSTMENT"
+  invoiceNumber   String?
+  transactionDate DateTime @default(now())
+  totalAmount     Float    @default(0) // إجمالي قيمة الفاتورة أو مبلغ السداد
+  paidAmount      Float    @default(0) // المدفوع الفوري وقت الفاتورة (إن وجد)
+  remainingAmount Float    @default(0) // الآجل المتبقي من الفاتورة وقت صدورها
+  paymentStatus   String   @default("CREDIT") // "PAID" | "PARTIAL" | "CREDIT"
+  paymentMethod   String? // "CASH" | "INSTAPAY" | "VODAFONE_CASH" | "BANK_TRANSFER" | "CARD" | "CREDIT"
+  paymentSource   String   @default("OWNER_CURRENT_ACCOUNT") // "DRAWER" | "OWNER_CURRENT_ACCOUNT" | "MAIN_SAFE" | "BANK_ACCOUNT"
+  expenseId       String? // رابط مصروف الدرج إذا سُدد نقدياً من درج الكاشير
+  itemsJson       String? // JSON: أصناف الفاتورة المهضومة بالذكاء الاصطناعي أو اليدوية
+  imageUrl        String? // رابط/أرشيف صورة الفاتورة
+  aiConfidence    String? // "HIGH" | "MEDIUM" | "LOW" | "MANUAL"
+  recordedBy      String   @default("المايسترو")
+  notes           String?
+  createdAt       DateTime @default(now())
+}
+
+// ----------------------------------------------------
+// 17. ORDER AUDIT LOGS & ADMIN SECURITY ALERTS (سجل تعديل الفواتير والدفع وتنبيهات الإدارة)
+// ----------------------------------------------------
+model OrderAuditLog {
+  id               String   @id @default(cuid())
+  orderId          String
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderNumber      String
+  outletId         String
+  outletName       String
+  actionType       String // "INVOICE_EDIT" | "PAYMENT_EDIT"
+  performedBy      String   @default("كاشير الفرع")
+  reason           String
+  oldPaymentMethod String?
+  newPaymentMethod String?
+  oldFinalAmount   Float    @default(0)
+  newFinalAmount   Float    @default(0)
+  amountDiff       Float    @default(0)
+  oldItemsJson     String?
+  newItemsJson     String?
+  createdAt        DateTime @default(now())
+}
+
+model AdminNotification {
+  id           String    @id @default(cuid())
+  outletId     String?
+  orderId      String?
+  orderNumber  String?
+  category     String    @default("INVOICE_EDITED") // "INVOICE_EDITED" | "PAYMENT_EDITED" | "GENERAL"
+  severity     String    @default("HIGH")
+  title        String
+  message      String
+  actorName    String?
+  metadataJson String?
+  isRead       Boolean   @default(false)
+  readBy       String?
+  readAt       DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+model PushSubscription {
+  id             String    @id @default(cuid())
+  endpoint       String    @unique
+  p256dh         String
+  auth           String
+  role           String    @default("CUSTOMER") // OWNER, ADMIN, POS, KDS, CUSTOMER
+  outletId       String?
+  userId         String?
+  userName       String?
+  customerPhone  String?
+  userAgent      String?
+  isActive       Boolean   @default(true)
+  lastNotifiedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+// ----------------------------------------------------
+// 18. CONSIGNMENT RETURNS (أمانات البيع بين سول ميت وأبو عادل بالتكلفة)
+// ----------------------------------------------------
+model ConsignmentBatch {
+  id                 String   @id @default(cuid())
+  outletSourceCode   String   @default("SOULMATE_CAFE")
+  outletDestCode     String   @default("ABU_ADEL_PATISSERIE")
+  soulmateMenuItemId String
+  abuAdelMenuItemId  String?
+  itemName           String
+  unitType           String   @default("PIECE")
+  unitCost           Float    @default(0)
+  sellingPrice       Float    @default(0)
+  sentQty            Float    @default(0)
+  soldQty            Float    @default(0)
+  returnedQty        Float    @default(0)
+  remainingQty       Float    @default(0)
+  soldRevenue        Float    @default(0)
+  settledAmount      Float    @default(0)
+  settlementMode     String   @default("PENDING") // "PENDING" | "OFFSET_DEBT" | "CASH_PAYOUT"
+  status             String   @default("OPEN") // "OPEN" | "PARTIAL" | "SETTLED"
+  notes              String?
+  recordedBy         String   @default("المايسترو")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now()) @updatedAt
+}
