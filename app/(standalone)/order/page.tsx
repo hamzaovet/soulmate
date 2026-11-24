@@ -736,7 +736,7 @@ function SoulmateHallOrderInner() {
       )}
 
       {/* Minimalist Clean Header with Theme Toggle & Multi-Channel Navigation */}
-      <header className="sticky top-0 z-30 bg-[#14100e]/95 backdrop-blur-md border-b border-amber-500/20 px-4 py-3">
+      <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#14100e]/95 backdrop-blur-md border-b border-slate-200 dark:border-amber-500/20 px-4 py-3">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Link
@@ -748,14 +748,14 @@ function SoulmateHallOrderInner() {
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black tracking-wide text-amber-100 leading-none">
+                <h1 className="text-lg font-black tracking-wide text-slate-900 dark:text-amber-100 leading-none">
                   Soulmate
                 </h1>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30">
                   صالة ☕
                 </span>
               </div>
-              <p className="text-[11px] text-amber-300/75 font-bold mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-amber-300/75 font-bold mt-0.5">
                 Dessert &amp; Coffee • منيو الصالة
               </p>
             </div>
@@ -765,10 +765,10 @@ function SoulmateHallOrderInner() {
             {/* Quick Switch to Delivery / Takeaway */}
             <Link
               href="/delivery"
-              className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-black flex items-center gap-1.5 transition shrink-0"
+              className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-black flex items-center gap-1.5 transition shrink-0"
               title="التبديل إلى خدمة دليفري وتيك أواي"
             >
-              <Bike className="w-3.5 h-3.5 text-emerald-400" />
+              <Bike className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span className="hidden sm:inline">دليفري وتيك أواي 🛵</span>
               <span className="sm:hidden">دليفري 🛵</span>
             </Link>
@@ -776,7 +776,7 @@ function SoulmateHallOrderInner() {
             {/* Home Navigation */}
             <Link
               href="/"
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-amber-200 transition shrink-0"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-amber-200 transition shrink-0"
               title="العودة للرئيسية"
             >
               <Home className="w-4 h-4" />
@@ -789,21 +789,21 @@ function SoulmateHallOrderInner() {
             <button
               type="button"
               onClick={() => setShowTablePicker(true)}
-              className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-xs font-black flex items-center gap-1.5 shrink-0 transition"
+              className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-900 dark:text-amber-200 text-xs font-black flex items-center gap-1.5 shrink-0 transition"
             >
-              <UtensilsCrossed className="w-3.5 h-3.5 text-amber-300" />
+              <UtensilsCrossed className="w-3.5 h-3.5 text-amber-700 dark:text-amber-300" />
               {selectedTableNumber ? `طاولة ${selectedTableNumber}` : "اختر طاولتك"}
             </button>
 
             {/* Search */}
             <div className="relative flex-1 sm:w-44">
-              <Search className="w-4 h-4 text-amber-300/60 absolute right-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 dark:text-amber-300/60 absolute right-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="ابحث..."
-                className="w-full pr-9 pl-3 py-1.5 rounded-xl bg-black/50 border border-white/10 text-xs text-amber-50 placeholder:text-white/35 focus:outline-none focus:border-amber-400"
+                className="w-full pr-9 pl-3 py-1.5 rounded-xl bg-slate-100 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-amber-50 placeholder:text-slate-400 dark:placeholder:text-white/35 focus:outline-none focus:border-amber-400"
               />
             </div>
           </div>
