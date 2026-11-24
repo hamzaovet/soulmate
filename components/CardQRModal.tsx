@@ -202,6 +202,16 @@ export default function CardQRModal({
             <Printer className="w-4 h-4" />
             طباعة كارت QR بجودة عالية
           </button>
+
+          <a
+            href="/table-stickers.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition"
+          >
+            <Printer className="w-4 h-4" />
+            طباعة استيكرات الطاولات (طاولة 1 إلى 8 على A4) 🪑✨
+          </a>
         </div>
       </div>
     </div>

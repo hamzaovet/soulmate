@@ -108,6 +108,22 @@ export default function SoulmateHomePage() {
           <PwaInstallButton variant="button" />
         </div>
 
+        {/* Table Stickers Print Action Banner */}
+        <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-amber-200/70">
+            <QrCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>استيكرات طاولات الصالة (طاولة 1 إلى 8) جاهزة للطباعة على ورق A4</span>
+          </div>
+          <a
+            href="/table-stickers.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-2 shadow-md shadow-emerald-600/20 transition shrink-0"
+          >
+            <span>🖨️ طباعة استيكرات الطاولات (8)</span>
+          </a>
+        </div>
+
         {/* Orca Tech Developer Signature */}
         <div className="pt-3 border-t border-slate-200 dark:border-white/5 text-[11px] text-slate-500 dark:text-amber-200/55 flex flex-wrap items-center justify-center gap-2">
           <span>

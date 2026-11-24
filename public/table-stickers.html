@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>استيكرات طاولات Soulmate (طاولة 1 إلى 8) — جاهزة للطباعة A4</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #0d0a08;
+      color: #fef3c7;
+      font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+      padding-bottom: 40px;
+    }
+    
+    /* Top Control Bar */
+    .control-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(20, 15, 12, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 14px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .brand-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f59e0b, #b45309);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: #000;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    }
+    .brand-title {
+      font-size: 17px;
+      font-weight: 900;
+      color: #fff;
+    }
+    .brand-subtitle {
+      font-size: 12px;
+      font-weight: 700;
+      color: #d97706;
+    }
+    
+    .actions-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-print {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s;
+    }
+    .btn-print:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.45);
+    }
+    .btn-mode {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fde68a;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-mode.active, .btn-mode:hover {
+      background: #f59e0b;
+      color: #000;
+      border-color: #f59e0b;
+    }
+
+    /* Print Paper Container */
+    .sheet-wrapper {
+      max-width: 1000px;
+      margin: 25px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      align-items: center;
+    }
+    
+    /* A4 Simulation on Screen */
+    .a4-page {
+      width: 210mm;
+      min-height: 297mm;
+      background: #fff;
+      padding: 10mm;
+      border-radius: 12px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+      position: relative;
+      display: grid;
+      gap: 8mm;
+      align-content: start;
+      page-break-after: always;
+      color: #1c1917;
+    }
+    
+    .page-header-info {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px dashed #d6d3d1;
+      padding-bottom: 4mm;
+      font-size: 11px;
+      color: #78716c;
+      font-weight: 700;
+    }
+
+    /* Layout 1: 4 per page (2x2) */
+    .grid-4 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    /* Layout 2: 8 on one page (2x4) */
+    .grid-8 {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4mm;
+      padding: 6mm;
+    }
+    
+    /* Sticker Item Card */
+    .sticker-card {
+      border: 1.5px dashed #a8a29e;
+      border-radius: 14px;
+      padding: 3mm;
+      position: relative;
+      background: #fafaf9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      page-break-inside: avoid;
+    }
+    .cut-badge {
+      position: absolute;
+      top: 2px;
+      right: 6px;
+      font-size: 9px;
+      color: #a8a29e;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .sticker-img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      display: block;
+    }
+    
+    /* Quick Download Grid at Bottom */
+    .download-section {
+      max-width: 1000px;
+      width: 95%;
+      margin: 30px auto;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 24px;
+    }
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .download-card {
+      background: #191410;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 14px;
+      padding: 12px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .download-card:hover {
+      border-color: #f59e0b;
+      transform: translateY(-3px);
+    }
+    .download-card img {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .download-btn {
+      display: block;
+      background: #f59e0b;
+      color: #000;
+      font-weight: 900;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: #fff !important;
+        color: #000 !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .sheet-wrapper {
+        margin: 0 !important;
+        gap: 0 !important;
+        max-width: 100% !important;
+      }
+      .a4-page {
+        width: 100% !important;
+        min-height: 100vh !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        padding: 8mm !important;
+        page-break-after: always !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .sticker-card {
+        border: 1px dashed #78716c !important;
+        background: #fff !important;
+        box-shadow: none !important;
+      }
+      .sticker-img {
+        box-shadow: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Navigation Controls -->
+  <div class="control-bar no-print">
+    <div class="brand-box">
+      <div class="brand-icon">☕</div>
+      <div>
+        <div class="brand-title">استيكرات طاولات Soulmate (طاولة 1 إلى 8)</div>
+        <div class="brand-subtitle">جاهزة للطباعة المباشرة على مقاس A4 أو القص للاستاندات</div>
+      </div>
+    </div>
+
+    <div class="actions-box">
+      <button class="btn-mode active" id="btnMode4" onclick="setLayout('4')">
+        📄 4 استيكرات في الصفحة (صفحتين = 8 طاولات)
+      </button>
+      <button class="btn-mode" id="btnMode8" onclick="setLayout('8')">
+        📑 8 استيكرات في صفحة واحدة A4
+      </button>
+      <button class="btn-print" onclick="window.print()">
+        🖨️ طباعة الاستيكرات فوراً
+      </button>
+    </div>
+  </div>
+
+  <!-- A4 Printable Sheets -->
+  <div class="sheet-wrapper" id="sheetsContainer">
+    <!-- Populated by JS based on layout mode -->
+  </div>
+
+  <!-- Download High-Res Images Grid -->
+  <div class="download-section no-print">
+    <h3 style="font-size: 16px; font-weight: 900; color: #f59e0b; display: flex; align-items: center; gap: 8px;">
+      <span>💾 تحميل صور الاستيكرات بجودة فائقة (PNG بدقة 1080×1520)</span>
+    </h3>
+    <p style="font-size: 12px; color: #a8a29e; margin-top: 4px;">
+      يمكنك حفظ كل صورة على حدة وإرسالها للمطبعة لطباعة ستيكر سيلفر أو فينيل لاصق مقاوم للماء
+    </p>
+
+    <div class="download-grid" id="downloadGrid"></div>
+
+    <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; font-size: 12px; color: #78716c;">
+      تطوير <strong style="color: #f59e0b;">شركة أوركا للحلول البرمجية (Orca Tech) 🐬</strong> • 📞 01018671000
+    </div>
+  </div>
+
+  <script>
+    let currentLayout = '4';
+
+    function renderSheets() {
+      const container = document.getElementById('sheetsContainer');
+      container.innerHTML = '';
+
+      if (currentLayout === '4') {
+        // 2 Pages (4 stickers each: 1-4, then 5-8)
+        [ [1, 2, 3, 4], [5, 6, 7, 8] ].forEach((group, pageIdx) => {
+          const page = document.createElement('div');
+          page.className = 'a4-page grid-4';
+          
+          let pageHtml = `
+            <div class="page-header-info no-print">
+              <span>☕ Soulmate Dessert & Coffee — صفحة ${pageIdx + 1} من 2 (طاولات ${group[0]} إلى ${group[group.length - 1]})</span>
+              <span>✂️ قص على طول الخط المتقطع وضع الاستيكر على الطاولة</span>
+            </div>
+          `;
+
+          group.forEach(tableNum => {
+            pageHtml += `
+              <div class="sticker-card">
+                <span class="cut-badge no-print">✂️ خط القص</span>
+                <img class="sticker-img" src="/stickers/soulmate-table-${tableNum}.png" alt="استيكر طاولة ${tableNum}" />
+              </div>
+            `;
+          });
+
+          page.innerHTML = pageHtml;
+          container.appendChild(page);
+        });
+      } else {
+        // 1 Single A4 page containing all 8 stickers
+        const page = document.createElement('div');
+        page.className = 'a4-page grid-8';
+        
+        let pageHtml = `
+          <div class="page-header-info no-print">
+            <span>☕ Soulmate Dessert & Coffee — صفحة A4 مدمجة (كافة الطاولات 1 إلى 8 في ورقة واحدة)</span>
+            <span>✂️ قص على طول الخط المتقطع وضع الاستيكر على الطاولة</span>
+          </div>
+        `;
+
+        for (let i = 1; i <= 8; i++) {
+          pageHtml += `
+            <div class="sticker-card">
+              <span class="cut-badge no-print">✂️ خط القص</span>
+              <img class="sticker-img" src="/stickers/soulmate-table-${i}.png" alt="استيكر طاولة ${i}" />
+            </div>
+          `;
+        }
+
+        page.innerHTML = pageHtml;
+        container.appendChild(page);
+      }
+    }
+
+    function setLayout(mode) {
+      currentLayout = mode;
+      document.getElementById('btnMode4').classList.toggle('active', mode === '4');
+      document.getElementById('btnMode8').classList.toggle('active', mode === '8');
+      renderSheets();
+    }
+
+    // Populate individual download cards
+    function renderDownloads() {
+      const grid = document.getElementById('downloadGrid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= 8; i++) {
+        grid.innerHTML += `
+          <div class="download-card">
+            <img src="/stickers/soulmate-table-${i}.png" alt="طاولة ${i}" />
+            <div style="font-weight: 900; font-size: 13px; margin-bottom: 6px; color: #fff;">طاولة ${i}</div>
+            <a href="/stickers/soulmate-table-${i}.png" download="soulmate-table-${i}.png" class="download-btn">
+              ⬇️ تحميل الصورة (PNG)
+            </a>
+          </div>
+        `;
+      }
+    }
+
+    // Init
+    renderSheets();
+    renderDownloads();
+  </script>
+</body>
+</html>

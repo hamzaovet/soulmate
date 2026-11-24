@@ -815,8 +815,8 @@ export default function SoulmateDeliveryPage() {
             onClick={() => setActiveCategory("ALL")}
             className={`px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap border transition ${
               activeCategory === "ALL"
-                ? "bg-amber-500 text-black border-amber-400"
-                : "bg-white/5 text-amber-100/75 border-white/10 hover:bg-white/10"
+                ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 dark:bg-white/5 dark:hover:bg-white/10 dark:text-amber-100/80 dark:border-white/10"
             }`}
           >
             كل الأقسام ({menuItems.length})
@@ -828,8 +828,8 @@ export default function SoulmateDeliveryPage() {
               onClick={() => setActiveCategory(cat.code)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap border transition ${
                 activeCategory === cat.code
-                  ? "bg-amber-500 text-black border-amber-400"
-                  : "bg-white/5 text-amber-100/75 border-white/10 hover:bg-white/10"
+                  ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 dark:bg-white/5 dark:hover:bg-white/10 dark:text-amber-100/80 dark:border-white/10"
               }`}
             >
               {cat.label} ({cat.count})
@@ -844,24 +844,24 @@ export default function SoulmateDeliveryPage() {
           {(() => {
             const meta = getStatusMeta(trackedOrder.status, trackedOrder.orderType);
             return (
-              <div className="rounded-3xl border border-emerald-500/40 bg-gradient-to-l from-emerald-950/60 via-[#171210] to-[#171210] p-4 shadow-xl space-y-3">
+              <div className="rounded-3xl border border-emerald-300 dark:border-emerald-500/40 bg-gradient-to-l from-emerald-50 via-white to-white dark:from-emerald-950/60 dark:via-[#171210] dark:to-[#171210] p-4 shadow-xl space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-400/40 flex items-center justify-center text-emerald-800 dark:text-emerald-300">
                       <Clock className="w-5 h-5 animate-pulse" />
                     </div>
                     <div>
-                      <div className="text-xs font-black text-emerald-300 flex items-center gap-2">
+                      <div className="text-xs font-black text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
                         <span>
                           متابعة طلبك المباشرة — بون #{trackedOrder.dailyTicketNo || trackedOrder.orderNumber}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-[10px]">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-transparent text-[10px] font-bold">
                           تحديث تلقائي كل 3 ثوانٍ
                         </span>
                       </div>
-                      <div className="text-sm font-black text-white mt-0.5">{meta.label}</div>
+                      <div className="text-sm sm:text-base font-black text-slate-900 dark:text-white mt-0.5">{meta.label}</div>
                       {trackedOrder.driverName && trackedOrder.status === "OUT_FOR_DELIVERY" && (
-                        <div className="text-xs text-purple-200 font-bold mt-0.5">
+                        <div className="text-xs text-purple-700 dark:text-purple-200 font-bold mt-0.5">
                           🛵 الكابتن: {trackedOrder.driverName}{" "}
                           {trackedOrder.driverPhone ? `(${trackedOrder.driverPhone})` : ""}
                         </div>
@@ -876,7 +876,7 @@ export default function SoulmateDeliveryPage() {
                         href={buildWhatsappReceiptLink()}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black flex items-center gap-1.5"
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 shadow-sm"
                       >
                         <MessageCircle className="w-3.5 h-3.5" />
                         إرسال صورة الإيصال واتساب
@@ -893,7 +893,7 @@ export default function SoulmateDeliveryPage() {
                             localStorage.removeItem(ACTIVE_ORDER_STORAGE_KEY);
                           } catch {}
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold"
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white dark:border-transparent text-xs font-bold"
                       >
                         إخفاء
                       </button>
@@ -912,12 +912,12 @@ export default function SoulmateDeliveryPage() {
                     <div key={st.s} className="space-y-1">
                       <div
                         className={`h-1.5 rounded-full transition-all ${
-                          meta.step >= st.s ? "bg-emerald-400" : "bg-white/10"
+                          meta.step >= st.s ? "bg-emerald-500 dark:bg-emerald-400" : "bg-slate-200 dark:bg-white/10"
                         }`}
                       />
                       <div
                         className={`text-[10px] font-bold text-center ${
-                          meta.step >= st.s ? "text-emerald-300" : "text-white/40"
+                          meta.step >= st.s ? "text-emerald-800 dark:text-emerald-300 font-black" : "text-slate-500 dark:text-white/40 font-bold"
                         }`}
                       >
                         {st.t}

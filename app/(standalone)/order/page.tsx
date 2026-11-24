@@ -816,8 +816,8 @@ function SoulmateHallOrderInner() {
             onClick={() => setActiveCategory("ALL")}
             className={`px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap border transition ${
               activeCategory === "ALL"
-                ? "bg-amber-500 text-black border-amber-400 shadow-md shadow-amber-500/20"
-                : "bg-white/5 text-amber-100/75 border-white/10 hover:bg-white/10"
+                ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 dark:bg-white/5 dark:hover:bg-white/10 dark:text-amber-100/80 dark:border-white/10"
             }`}
           >
             كل الأقسام ({menuItems.length})
@@ -829,8 +829,8 @@ function SoulmateHallOrderInner() {
               onClick={() => setActiveCategory(cat.code)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap border transition ${
                 activeCategory === cat.code
-                  ? "bg-amber-500 text-black border-amber-400 shadow-md shadow-amber-500/20"
-                  : "bg-white/5 text-amber-100/75 border-white/10 hover:bg-white/10"
+                  ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 dark:bg-white/5 dark:hover:bg-white/10 dark:text-amber-100/80 dark:border-white/10"
               }`}
             >
               {cat.label} ({cat.count})
@@ -1292,7 +1292,7 @@ function SoulmateHallOrderInner() {
                   )}
 
                   {billRequestedResult.method === "CASH" && (
-                    <div className="text-xs text-amber-100/75 text-center pt-1">
+                    <div className="text-xs text-slate-700 dark:text-amber-100/75 text-center pt-1 font-bold">
                       شكراً لزيارتك Soulmate Dessert &amp; Coffee ☕💛
                     </div>
                   )}
